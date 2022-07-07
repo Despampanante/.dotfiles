@@ -22,6 +22,7 @@ return require('packer').startup(function()
   use 'tpope/vim-fugitive'
   use 'jose-elias-alvarez/nvim-lsp-ts-utils'
   use 'airblade/vim-gitgutter'
+  use 'habamax/vim-godot'
   use {
     'nvim-lualine/lualine.nvim',
     requires = { 'kyazdani42/nvim-web-devicons', opt = true }
