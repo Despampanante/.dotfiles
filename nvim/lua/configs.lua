@@ -15,10 +15,10 @@ vim.opt.wrap = true
 
 --" Set tab rendering to 2 wide"
 vim.opt.expandtab = true
-vim.opt.softtabstop = 2
-vim.opt.shiftwidth = 2
+vim.opt.softtabstop = 4
+vim.opt.shiftwidth = 4
 vim.opt.autoindent = true
-	
+
 --" Autocomplete like zsh (ex commands)"
 vim.opt.wildmenu = true
 vim.opt.wildmode = "full"
@@ -28,3 +28,7 @@ vim.opt.history = 200
 
 --
 vim.cmd("colorscheme gruvbox")
+
+--Set autofolding with Treesitter
+vim.opt.foldmethod = "expr"
+vim.opt.foldexpr = "nvim_treesitter#foldexpr()"

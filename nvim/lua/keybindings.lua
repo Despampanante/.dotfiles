@@ -9,12 +9,8 @@ nkeymap( "gk", "k")
 nkeymap( "j", "gj")
 nkeymap( "gj", "j")
 
-vim.api.nvim_set_keymap(
-  "n",
-  "<space>fb",
-  ":Telescope file_browser",
-  { noremap = true }
-)
+--Open file_browser
+nkeymap("<space>fb", ":Telescope file_browser <CR>")
 
 --" FZF keybindings"
 nkeymap( "<C-p>", ":<C-u>Telescope find_files<CR>")
@@ -24,3 +20,9 @@ nkeymap( '<c-j>', '<c-w>j')
 nkeymap( '<c-h>', '<c-w>h')
 nkeymap( '<c-k>', '<c-w>k')
 nkeymap( '<c-l>', '<c-w>l')
+
+-- Diagnostic stuff
+nkeymap('<space>e', 'vim.diagnostic.open_float')
+nkeymap('[d', 'vim.diagnostic.goto_prev')
+nkeymap(']d', 'vim.diagnostic.goto_next')
+nkeymap('<space>q', 'vim.diagnostic.setloclist')
