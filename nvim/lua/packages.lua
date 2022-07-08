@@ -21,10 +21,12 @@ return require('packer').startup(function()
   use 'nvim-telescope/telescope.nvim'
   use 'tpope/vim-fugitive'
   use 'jose-elias-alvarez/nvim-lsp-ts-utils'
+  use "jose-elias-alvarez/null-ls.nvim"
   use 'airblade/vim-gitgutter'
   use 'habamax/vim-godot'
   use 'hrsh7th/vim-vsnip'
   use 'hrsh7th/vim-vsnip-integ'
+  use 'nvim-telescope/telescope-file-browser.nvim'
   use {
     'nvim-lualine/lualine.nvim',
     requires = { 'kyazdani42/nvim-web-devicons', opt = true }

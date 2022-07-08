@@ -9,6 +9,13 @@ nkeymap( "gk", "k")
 nkeymap( "j", "gj")
 nkeymap( "gj", "j")
 
+vim.api.nvim_set_keymap(
+  "n",
+  "<space>fb",
+  ":Telescope file_browser",
+  { noremap = true }
+)
+
 --" FZF keybindings"
 nkeymap( "<C-p>", ":<C-u>Telescope find_files<CR>")
 

@@ -18,7 +18,7 @@ local on_attach = function(client, bufnr)
   local bufopts = { noremap = true, silent = true, buffer = bufnr }
   vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, bufopts)
   vim.keymap.set('n', 'gd', vim.lsp.buf.definition, bufopts)
-  vim.keymap.set('n', 'K', vim.lsp.buf.hover, bufopts)
+  vim.keymap.set('n', 'I', vim.lsp.buf.hover, bufopts)
   vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, bufopts)
   vim.keymap.set('n', '<C-k>', vim.lsp.buf.signature_help, bufopts)
   vim.keymap.set('n', '<space>wa', vim.lsp.buf.add_workspace_folder, bufopts)
@@ -33,7 +33,6 @@ local on_attach = function(client, bufnr)
 end
 
 local cmp = require'cmp'
-
 cmp.setup({
   snippet = {
     -- REQUIRED - you must specify a snippet engine
@@ -56,9 +55,9 @@ cmp.setup({
     ['<c-y>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
   }),
   sources = cmp.config.sources({
-    { name = 'buffer' },
     { name = 'nvim_lsp' },
     { name = 'vsnip' }, -- For vsnip users.
+    { name = 'buffer' },
     -- { name = 'luasnip' }, -- For luasnip users.
     -- { name = 'ultisnips' }, -- For ultisnips users.
     -- { name = 'snippy' }, -- For snippy users.
@@ -86,6 +85,19 @@ cmp.setup.cmdline(':', {
     { name = 'cmdline' }
   })
 })
+
+
+local null_ls = require("null-ls")
+null_ls.setup({
+    sources = {
+        null_ls.builtins.formatting.eslint_d,
+        null_ls.builtins.diagnostics.eslint_d,
+        null_ls.builtins.code_actions.eslint,
+        null_ls.builtins.formatting.prettier,
+    },
+    on_attach = on_attach,
+})
+
 -- Setup lspconfig.
 local capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
 -- Replace <YOUR_LSP_SERVER> with each lsp server you've enabled.
@@ -109,7 +121,7 @@ require('lspconfig')['sumneko_lua'].setup {
   settings = {
     Lua = {
       diagnostics = {
-        globals = {'vim', 'use'},
+        globals = {'vim', 'use', 'null_ls'},
       },
     },
   },
