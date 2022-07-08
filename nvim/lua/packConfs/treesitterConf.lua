@@ -9,6 +9,9 @@ configs.setup {
   },
   indent = {
     enable = true,
+    disable = {
+        "gdscript",
+    }
   }
 }
 

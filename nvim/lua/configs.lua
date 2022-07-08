@@ -13,7 +13,7 @@ vim.opt.visualbell = true
 --" Whitespace"
 vim.opt.wrap = true
 
---" Set tab rendering to 2 wide"
+--" Set tab rendering to 4 wide"
 vim.opt.expandtab = true
 vim.opt.softtabstop = 4
 vim.opt.shiftwidth = 4

@@ -10,7 +10,8 @@ nkeymap( "j", "gj")
 nkeymap( "gj", "j")
 
 --Open file_browser
-nkeymap("<space>fb", ":Telescope file_browser <CR>")
+--nkeymap("<space>fb", ":Telescope file_browser <CR>")
+nkeymap("<space>fb", ":NvimTreeToggle <CR>")
 
 --" FZF keybindings"
 nkeymap( "<C-p>", ":<C-u>Telescope find_files<CR>")
@@ -26,3 +27,4 @@ nkeymap('<space>e', 'vim.diagnostic.open_float')
 nkeymap('[d', 'vim.diagnostic.goto_prev')
 nkeymap(']d', 'vim.diagnostic.goto_next')
 nkeymap('<space>q', 'vim.diagnostic.setloclist')
+
