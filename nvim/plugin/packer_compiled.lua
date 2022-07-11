@@ -95,10 +95,10 @@ _G.packer_plugins = {
     path = "C:\\Users\\santi\\AppData\\Local\\nvim-data\\site\\pack\\packer\\start\\cmp-path",
     url = "https://github.com/hrsh7th/cmp-path"
   },
-  ["gruvbox.nvim"] = {
+  gruvbox = {
     loaded = true,
-    path = "C:\\Users\\santi\\AppData\\Local\\nvim-data\\site\\pack\\packer\\start\\gruvbox.nvim",
-    url = "https://github.com/ellisonleao/gruvbox.nvim"
+    path = "C:\\Users\\santi\\AppData\\Local\\nvim-data\\site\\pack\\packer\\start\\gruvbox",
+    url = "https://github.com/gruvbox-community/gruvbox"
   },
   ["lualine.nvim"] = {
     loaded = true,

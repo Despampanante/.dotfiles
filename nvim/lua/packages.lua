@@ -4,7 +4,7 @@ return require('packer').startup(function()
     use { "wbthomason/packer.nvim" }
 
     --Aesthetic
-    use { "ellisonleao/gruvbox.nvim" }
+    use { "gruvbox-community/gruvbox" }
     use { "goolord/alpha-nvim",
         requires = { 'kyazdani42/nvim-web-devicons' },
         config = function()
