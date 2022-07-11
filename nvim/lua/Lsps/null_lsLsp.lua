@@ -7,5 +7,5 @@ null_ls.setup({
         null_ls.builtins.formatting.prettier,
         null_ls.builtins.formatting.stylua
     },
-    on_attach = on_attach,
+    on_attach = default_on_attach,
 })
