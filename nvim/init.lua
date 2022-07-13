@@ -3,6 +3,7 @@ require('packages')
 
 --Package Conf Setup
 require('packConfs/lualineConf')
+require('packConfs/treesitterConf')
 --require('packConfs/telescopeConf')
 require('packConfs/cmpConf')
 require('packConfs/nvim-treeConf')
