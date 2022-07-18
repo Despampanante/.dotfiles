@@ -32,3 +32,6 @@ vim.cmd("colorscheme gruvbox")
 --Set autofolding with Treesitter
 vim.opt.foldmethod = "expr"
 vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+
+--Diagnostic Configs
+vim.diagnostic.config{virtual_text=false}
