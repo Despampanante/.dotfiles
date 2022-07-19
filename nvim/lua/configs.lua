@@ -13,10 +13,10 @@ vim.opt.visualbell = true
 --" Whitespace"
 vim.opt.wrap = true
 
---" Set tab rendering to 4 wide"
+--" Set tab rendering to 2 wide"
 vim.opt.expandtab = true
-vim.opt.softtabstop = 4
-vim.opt.shiftwidth = 4
+vim.opt.softtabstop = 2
+vim.opt.shiftwidth = 2
 vim.opt.autoindent = true
 
 --" Autocomplete like zsh (ex commands)"
