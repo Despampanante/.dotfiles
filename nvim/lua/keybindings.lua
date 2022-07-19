@@ -24,7 +24,7 @@ nkeymap('<c-k>', '<c-w>k')
 nkeymap('<c-l>', '<c-w>l')
 
 -- Diagnostic stuff
-nkeymap('<space>e', 'vim.diagnostic.open_float')
-nkeymap('[d', 'vim.diagnostic.goto_prev')
-nkeymap(']d', 'vim.diagnostic.goto_next')
-nkeymap('<space>q', 'vim.diagnostic.setloclist')
+nkeymap('<space>e', ':lua vim.diagnostic.open_float() <CR>')
+nkeymap('[d', ':lua vim.diagnostic.goto_prev() <CR>')
+nkeymap(']d', ':lua vim.diagnostic.goto_next() <CR>')
+nkeymap('<space>q', ':lua vim.diagnostic.setloclist() <CR>')
