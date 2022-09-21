@@ -4,16 +4,18 @@ require('packages')
 --Package Conf Setup
 require('packConfs/lualineConf')
 require('packConfs/treesitterConf')
---require('packConfs/telescopeConf')
 require('packConfs/cmpConf')
 require('packConfs/nvim-treeConf')
+require('packConfs/telescopeConf')
 
 --LspSetup
-require('nvim-lsp-installer').setup {}
+require("mason").setup()
+require("mason-lspconfig").setup()
 require('Lsps/defaultLspConf')
 require('Lsps/tsserverLsp'    )
 require('Lsps/gdscriptLsp')
 require('Lsps/luaLsp')
+require('Lsps/cpp')
 require('Lsps/null_lsLsp')
 
 --General

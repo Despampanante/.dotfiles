@@ -8,7 +8,7 @@ return require('packer').startup(function()
     use { "goolord/alpha-nvim",
         requires = { 'kyazdani42/nvim-web-devicons' },
         config = function()
-            require'alpha'.setup(require'alpha.themes.startify'.opts)
+            require'alpha'.setup(require'alpha.themes.startify'.config)
         end
     }
     use { "nvim-lualine/lualine.nvim",
@@ -16,8 +16,10 @@ return require('packer').startup(function()
     }
 
     --Lsp Stuff 
+    use { "williamboman/mason.nvim" }
+    use { "williamboman/mason-lspconfig.nvim" }
     use { "neovim/nvim-lspconfig" }
-    use { "williamboman/nvim-lsp-installer" }
+
     use { "jose-elias-alvarez/nvim-lsp-ts-utils" }
     use { "jose-elias-alvarez/null-ls.nvim" }
 
@@ -32,7 +34,9 @@ return require('packer').startup(function()
     use { "nvim-treesitter/nvim-treesitter" }
 
     --File browser
+    use { "vijaymarupudi/nvim-fzf" }
     use { "kyazdani42/nvim-tree.lua" }
+    use { "ahmedkhalf/project.nvim", config = function() require("project_nvim").setup{} end}
 
     --Telescope stuff
     use { "nvim-lua/plenary.nvim" }
