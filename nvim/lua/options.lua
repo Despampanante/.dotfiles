@@ -1,3 +1,4 @@
+vim.g.mapleader = " "
 -- Don't try to be vi compatible
 vim.opt.compatible = false
 
@@ -19,6 +20,9 @@ vim.opt.softtabstop = 2
 vim.opt.shiftwidth = 2
 vim.opt.autoindent = true
 
+vim.opt.ignorecase = true;
+vim.opt.smartcase = true;
+
 --" Autocomplete like zsh (ex commands)"
 vim.opt.wildmenu = true
 vim.opt.wildmode = "full"
@@ -26,12 +30,16 @@ vim.opt.wildmode = "full"
 --" Set history of commands"
 vim.opt.history = 200
 
---
+--" Color shceme"
 vim.cmd("colorscheme gruvbox")
 
 --Set autofolding with Treesitter
 vim.opt.foldmethod = "expr"
 vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
 
+--Misc
+vim.opt.hidden = true
+
 --Diagnostic Configs
 vim.diagnostic.config{virtual_text=false}
+

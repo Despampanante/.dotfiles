@@ -1,0 +1,4 @@
+require("toggleterm").setup{
+
+}
+
