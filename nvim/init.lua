@@ -1,6 +1,6 @@
 --Package Init
-require('packages')
 require('impatient')
+require('packages')
 
 --LspSetup
 require('lsp.lspSetup')

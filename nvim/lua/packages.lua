@@ -1,4 +1,5 @@
 return require('packer').startup(function()
+
   --Prereq
   use { 'nvim-lua/plenary.nvim' }
   use { 'wbthomason/packer.nvim' }
@@ -15,6 +16,31 @@ return require('packer').startup(function()
     requires = { 'kyazdani42/nvim-web-devicons', opt = true },
     config = function() require('plugins.lualine') end
   }
+
+  --Telescope stuff
+  use {
+    'nvim-telescope/telescope.nvim',
+    config = function() require('plugins.telescope') end
+  }
+
+  --Nvim Dap
+  use {
+    'mfussenegger/nvim-dap',
+    config = function() require('plugins.nvim-dap') end
+  }
+  use {
+    'rcarriga/nvim-dap-ui',
+    config = function() require('plugins.nvim-dap-ui') end
+  }
+  use {
+    'theHamsta/nvim-dap-virtual-text',
+    config = function() require('plugins.nvim-dap-virtual-text') end
+  }
+  use {
+    'nvim-telescope/telescope-dap.nvim',
+    config = function() require('telescope').load_extension('dap') end
+  }
+  
 
   --Cmp Stuff
   use {
@@ -57,30 +83,21 @@ return require('packer').startup(function()
   }
   use { 'ahmedkhalf/project.nvim', config = function() require('project_nvim').setup{} end}
 
-  --Telescope stuff
-  use {
-    'nvim-telescope/telescope.nvim',
-    config = function() require('plugins.telescope') end
-  }
 
   --Git Stuff
   use { 'tpope/vim-fugitive' }
   use { 'airblade/vim-gitgutter' }
 
-
   --Misc
   use {'lewis6991/impatient.nvim'}
   use {'windwp/nvim-autopairs',config = function() require('nvim-autopairs').setup {} end}
-  use { 'habamax/vim-godot' }
   use {
     "akinsho/toggleterm.nvim",
     tag = '*',
     config = function()require('plugins.toggleterm')end
   }
-  use {
-    'chipsenkbeil/distant.nvim',
-    config = function() require('plugins.distant') end
-  }
+
+
 end)
 
 
