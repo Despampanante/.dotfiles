@@ -1,9 +1,8 @@
 vim.g.mapleader = " "
 -- Don't try to be vi compatible
 vim.opt.compatible = false
-
-vim.g.do_filetype_lua = 1
-vim.g.did_load_filetypes = 0
+--vim.g.do_filetype_lua = 1
+--vim.g.did_load_filetypes = 0
 
 --" Show line numbers"
 vim.opt.number = true
@@ -32,6 +31,7 @@ vim.opt.history = 200
 
 --" Color shceme"
 vim.cmd("colorscheme gruvbox")
+vim.cmd[[hi Normal guibg=NONE ctermbg=NONE]]
 
 --Set autofolding with Treesitter
 vim.opt.foldmethod = "expr"
