@@ -5,6 +5,7 @@ vim.opt.compatible = false
 --vim.g.did_load_filetypes = 0
 
 --" Show line numbers"
+vim.opt.relativenumber = true
 vim.opt.number = true
 
 --" Blink cursor on error instead of beeping (grr)"
@@ -36,6 +37,9 @@ vim.cmd[[hi Normal guibg=NONE ctermbg=NONE]]
 --Set autofolding with Treesitter
 vim.opt.foldmethod = "expr"
 vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+
+--Set sign column
+vim.opt.signcolumn = "yes:2"
 
 --Misc
 vim.opt.hidden = true
