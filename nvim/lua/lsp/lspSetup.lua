@@ -43,7 +43,7 @@ default_flags = {
 require('mason').setup()
 
 -- Enable the following language servers
-local servers = { 'clangd', 'rust_analyzer', 'sumneko_lua'}
+local servers = { 'pylsp', 'clangd', 'rust_analyzer', 'sumneko_lua'}
 
 -- Ensure the servers above are installed
 require('mason-lspconfig').setup {
