@@ -310,8 +310,8 @@ set $ws10 "10"
 # bind program to workspace and focus to them on startup:
 assign [class="Xfce4-terminal"] $ws1
 assign [class="(?i)qutebrowser"] $ws2
-assign [class="(?i)discord"] $ws9
-#assign [class="Spotify"] $ws10
+assign [class="(?i)thunderbird"] $ws8
+assign [class="(?i)ferdium"] $ws9
 for_window [class="Spotify"] move to workspace $ws10
 
 
@@ -411,7 +411,8 @@ exec --no-startup-id dbus-launch dunst --config ~/.config/dunst/dunstrc
 # Autostart apps as you like
 exec --no-startup-id sleep 2 && xfce4-terminal
 exec --no-startup-id sleep 1 && qutebrowser 
-exec --no-startup-id sleep 1 && discord 
+exec --no-startup-id sleep 1 && ferdium 
+exec --no-startup-id sleep 1 && thunderbird 
 exec --no-startup-id sleep 1 && spotify 
 
 #exec --no-startup-id sleep 3 && thunar
