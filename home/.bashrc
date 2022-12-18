@@ -87,10 +87,11 @@ _open_files_for_editing() {
 
 setxkbmap -option ctrl:noca\ps
 alias update-grub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
-alias school="ssh sdepasc1@remote.cs.binghamton.edu"
+alias school="sshfs sdepasc1@remote.cs.binghamton.edu:/home/sdepasc1/ ~/mnt"
 
 
 # pnpm
 export PNPM_HOME="/home/santiago/.local/share/pnpm"
 export PATH="$PNPM_HOME:$PATH"
+export BROWSER=qutebrowser
 # pnpm end
