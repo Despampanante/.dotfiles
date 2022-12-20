@@ -1,6 +1,5 @@
 My Neovim Configs!
 
-I find symlinking the nvim directory to the correct place the best solution. 
+To install configs run "./install" and make sure $STOW_FOLDERS lists the ones you want to use!
 
-use "ln -s ~/dotfiles/nvim ~/.config/nvim"
 
