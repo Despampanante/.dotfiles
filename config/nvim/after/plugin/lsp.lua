@@ -1,7 +1,6 @@
 local lsp = require('lsp-zero')
 
 lsp.preset('recommended')
-lsp.setup()
 
 lsp.ensure_installed({
   'tsserver',
@@ -75,3 +74,4 @@ lsp.setup()
 vim.diagnostic.config({
     virtual_text = true,
 })
+

@@ -159,7 +159,13 @@ config.set('content.javascript.enabled', True, 'qute://*/*')
 # the search engine name to the search term, e.g. `:open google
 # qutebrowser`.
 # Type: Dict
-c.url.searchengines = {'DEFAULT': 'www.duckduckgo.com/?q={}', 'rd': 'www.reddit.com/r/{}', 'yt': 'https://www.youtube.com/results?search_query={}', 'dv': 'https://dragonvale.fandom.com/wiki/Special:Search?query={}'}
+c.url.searchengines = {
+        'DEFAULT': 'www.duckduckgo.com/?q={}', 
+        'rd': 'www.reddit.com/r/{}',
+        'yt': 'https://www.youtube.com/results?search_query={}', 
+        'dv': 'https://dragonvale.fandom.com/wiki/Special:Search?query={}',
+        'gh': 'https://github.com/{}',
+        }
 
 # Bindings for normal mode
 config.bind(';m', 'hint links spawn mpv --geometry=640x360-10+30 --force-window=immediate {hint-url}')

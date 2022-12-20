@@ -1,7 +1,3 @@
-#
-# ~/.bashrc
-#
-
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
@@ -46,10 +42,6 @@ bind '"\e[B":history-search-forward'
 
 ################################################################################
 ## Some generally useful functions.
-## Consider uncommenting aliases below to start using these functions.
-##
-## October 2021: removed many obsolete functions. If you still need them, please look at
-## https://github.com/EndeavourOS-archive/EndeavourOS-archiso/raw/master/airootfs/etc/skel/.bashrc
 
 _open_files_for_editing() {
     # Open any given document file(s) for editing (or just viewing).
@@ -81,8 +73,8 @@ _open_files_for_editing() {
 ## Uncomment an alias if you want to use it.
 ##
 
-# alias ef='_open_files_for_editing'     # 'ef' opens given file(s) for editing
-# alias pacdiff=eos-pacdiff
+alias ef='_open_files_for_editing'     # 'ef' opens given file(s) for editing
+alias pacdiff=eos-pacdiff
 ################################################################################
 
 setxkbmap -option ctrl:noca\ps
