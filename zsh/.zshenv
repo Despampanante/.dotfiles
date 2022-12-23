@@ -14,3 +14,5 @@ bindkey -s ^f "tmux-sessionizer\n"
 catr() {
     tail -n "+$1" $3 | head -n "$(($2 - $1 + 1))"
 }
+
+tmux new -As System
