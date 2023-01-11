@@ -103,6 +103,7 @@ source $ZSH/oh-my-zsh.sh
 setxkbmap -option ctrl:noca\ps
 alias update-grub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 alias school="sshfs sdepasc1@remote.cs.binghamton.edu:/home/sdepasc1/ ~/mnt"
+alias schoolssh="ssh sdepasc1@remote.cs.binghamton.edu" 
 
 
 # pnpm

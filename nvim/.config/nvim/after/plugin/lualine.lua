@@ -1,6 +1,6 @@
 require('lualine').setup {
   options = {
-    theme = 'gruvbox',
+    theme = 'gruvbox-material',
     disabled_filetypes = {},
     always_divide_middle = true,
     globalstatus = false,

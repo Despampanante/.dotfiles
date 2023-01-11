@@ -4,31 +4,49 @@ return require('packer').startup(function(use)
   -- Packer can manage itself
   use 'wbthomason/packer.nvim'
 
+  -- Telescope
   use {
       'nvim-telescope/telescope.nvim', tag = '0.1.0',
       -- or                            , branch = '0.1.x',
       requires = { {'nvim-lua/plenary.nvim'} }
   }
 
+  -- Aestetic
   use ({
-	  'gruvbox-community/gruvbox',
-	  as = 'gruvbox',
-	  config = function()
-		  vim.cmd('colorscheme gruvbox')
-	  end
+	  'sainnhe/gruvbox-material',
   })
 
+  --StatusLine
   use {
     'nvim-lualine/lualine.nvim',
     requires = { 'kyazdani42/nvim-web-devicons', opt = true },
   }
 
+  -- Treesitter
   use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
   use('nvim-treesitter/playground')
+
+  -- Movement
   use('theprimeagen/harpoon')
+
+  -- Misc
   use('mbbill/undotree')
+
+  -- Neorg
+  use {
+    "nvim-neorg/neorg",
+    run = ":Neorg sync-parsers", -- This is the important bit!
+    config = function()
+        require("neorg").setup {
+            -- configuration here
+        }
+    end,
+}
+
+  -- Git
   use('tpope/vim-fugitive')
 
+  -- LSP and Autocompletion
   use {
   'VonHeikemen/lsp-zero.nvim',
   requires = {

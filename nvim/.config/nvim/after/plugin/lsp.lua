@@ -7,6 +7,7 @@ lsp.ensure_installed({
   'eslint',
   'sumneko_lua',
   'rust_analyzer',
+  'grammarly'
 })
 
 -- Fix Undefined global 'vim'
@@ -72,6 +73,6 @@ end)
 lsp.setup()
 
 vim.diagnostic.config({
-    virtual_text = true,
+    virtual_text = false,
 })
 

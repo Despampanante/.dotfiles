@@ -15,4 +15,4 @@ catr() {
     tail -n "+$1" $3 | head -n "$(($2 - $1 + 1))"
 }
 
-tmux new -As System
+tmux new -As santiago
