@@ -7,4 +7,4 @@
 config_version: 2
 settings:
   content.notifications.enabled:
-    https://terraforming-mars.herokuapp.com: true
+    https://www.netflix.com: true

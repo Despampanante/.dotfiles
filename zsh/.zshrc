@@ -110,3 +110,6 @@ alias schoolssh="ssh sdepasc1@remote.cs.binghamton.edu"
 export PNPM_HOME="/home/santiago/.local/share/pnpm"
 export PATH="$PNPM_HOME:$PATH"
 export BROWSER=qutebrowser
+# export LC_ALL=en_IN.UTF-8
+# export LC_CTYPE=en_IN.UTF-8
+# export LANG=en_IN.UTF-8

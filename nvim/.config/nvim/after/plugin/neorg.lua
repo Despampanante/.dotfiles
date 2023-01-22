@@ -4,13 +4,20 @@ require('neorg').setup {
         ["core.norg.dirman"] = {
             config = {
                 workspaces = {
-                    work = "~/notes/work",
-                    personal = "~/notes/personal",
-                    school = "~/notes/school",
+                    main = "~/notes",
+                    -- gtd = "~/notes/gtd"
                 }
             }
         },
         ["core.norg.concealer"] = {},
-        ["core.norg.completion"] = {},
+        ["core.norg.completion"] = {
+            config =  {
+                engine="nvim-cmp"},
+        },
+        -- ["core.gtd.base"] = {
+        --     config = {
+        --         workspace = "gtd"
+        --     }
+        -- },
     }
 }

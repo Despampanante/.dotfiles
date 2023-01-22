@@ -2,6 +2,16 @@ local lsp = require('lsp-zero')
 
 lsp.preset('recommended')
 
+lsp.setup_nvim_cmp({
+    sources = {
+        {name = 'path'},
+        {name = 'nvim_lsp', keyword_length = 3},
+        {name = 'buffer', keyword_length = 3},
+        {name = 'luasnip', keyword_length = 2},
+        --{name = 'neorg'}
+    }
+})
+
 lsp.ensure_installed({
   'tsserver',
   'eslint',
