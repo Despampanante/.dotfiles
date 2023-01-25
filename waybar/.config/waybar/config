@@ -7,7 +7,7 @@
     "height": 30,
 
     "modules-left": [
-        "custom/launcher",
+        //"custom/launcher",
         "sway/workspaces",
         "sway/mode",
     ],
@@ -16,12 +16,12 @@
     ],
 
     "modules-right": [
-        "network",
-        "idle_inhibitor",
-        "memory",
-        "cpu",
+        //"network",
+        //"idle_inhibitor",
+        //"memory",
+        //"cpu",
         "pulseaudio",
-        "custom/keyboard-layout",
+        //"custom/keyboard-layout",
         "battery",
         //"custom/PBPbattery",
         "backlight#icon",
