@@ -112,3 +112,4 @@ export BROWSER=qutebrowser
 # export LC_ALL=en_IN.UTF-8
 # export LC_CTYPE=en_IN.UTF-8
 # export LANG=en_IN.UTF-8
+source /usr/share/nvm/init-nvm.sh

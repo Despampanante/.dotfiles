@@ -1,6 +1,3 @@
-ls
-cd ..
-ls
 cd 
 cd .config/
 ls
@@ -498,3 +495,6 @@ echo $(which zsh)
 chsh -s $(which zsh)
 sudo chsh -s $(which zsh) root
 reboot
+ls
+ls
+zsh
