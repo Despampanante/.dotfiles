@@ -99,16 +99,17 @@ source $ZSH/oh-my-zsh.sh
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
-    
-alias update-grub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
+
 alias school="sshfs sdepasc1@remote.cs.binghamton.edu:/home/sdepasc1/ ~/mnt"
-alias schoolssh="ssh sdepasc1@remote.cs.binghamton.edu" 
+alias schoolssh="ssh sdepasc1@remote.cs.binghamton.edu"
 
 
 # pnpm
 export PNPM_HOME="/home/santiago/.local/share/pnpm"
 export PATH="$PNPM_HOME:$PATH"
-export BROWSER=qutebrowser
+setxkbmap -layout us -option ctrl:swapcaps
+
+# export BROWSER=qutebrowser
 # export LC_ALL=en_IN.UTF-8
 # export LC_CTYPE=en_IN.UTF-8
 # export LANG=en_IN.UTF-8
