@@ -1,0 +1,6 @@
+[submodule "neovimConfig"]
+	path = neovimConfig
+	url = git@github.com:Despampanante/neovimConfig.git
+[submodule "nvim/.config/nvim"]
+	path = nvim/.config/nvim
+	url = git@github.com:Despampanante/neovimConfig.git
