@@ -107,7 +107,32 @@ alias schoolssh="ssh sdepasc1@remote.cs.binghamton.edu"
 # pnpm
 export PNPM_HOME="/home/santiago/.local/share/pnpm"
 export PATH="$PNPM_HOME:$PATH"
-setxkbmap -layout us -option ctrl:swapcaps
+
+
+# export LC_ALL=en_IN.UTF-8
+# export LANG=en_IN.UTF-8
+
+# Where should I put you?
+bindkey -s ^f "tmux-sessionizer\n"
+
+catr() {
+    tail -n "+$1" $3 | head -n "$(($2 - $1 + 1))"
+}
+
+session_name="santiago"
+
+# 1. First you check if a tmux session exists with a given name.
+tmux has-session -t=$session_name 2> /dev/null
+
+# 2. Create the session if it doesn't exists.
+if [[ $? -ne 0 ]]; then
+  TMUX='' tmux new-session -d -s "$session_name"
+fi
+
+# 3. Attach if outside of tmux, switch if you're in tmux.
+if [[ -z "$TMUX" ]]; then
+  tmux attach -t "$session_name"
+fi
 
 # export BROWSER=qutebrowser
 # export LC_ALL=en_IN.UTF-8
