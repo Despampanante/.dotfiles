@@ -498,3 +498,4 @@ reboot
 ls
 ls
 zsh
+exit
