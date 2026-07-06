@@ -31,6 +31,18 @@ Uses [catppuccin/tmux](https://github.com/catppuccin/tmux) via TPM. TPM itself i
 chezmoi run-once script (Linux-only; tmux isn't a native Windows tool). On first run inside tmux, press
 `<prefix> + I` (capital i) to have TPM fetch the plugins.
 
+## WezTerm
+
+`dot_config/wezterm/wezterm.lua` uses WezTerm's built-in "Catppuccin Latte" scheme, since WezTerm bundles it
+directly (no plugin clone needed, unlike tmux). Also runs natively on Windows, so it doubles as a terminal
+multiplexer there (via WezTerm's own pane/tab system and `wezterm-mux-server` for detach/reattach), since
+tmux itself needs WSL/MSYS2 on Windows.
+
+Leader key is `Ctrl+b`, matching the old tmux prefix:
+- `leader + %` / `leader + "` — split pane vertical/horizontal (tmux muscle memory)
+- `leader + h/j/k/l` — move between panes (vi-style, like the old tmux config)
+- `leader + r` — reload config (like tmux's `bind r source-file`)
+
 ## Legacy
 
 Old Sway/waybar/qutebrowser/tmux/zsh Stow-based config lives on the [`legacy`](../../tree/legacy) branch.
