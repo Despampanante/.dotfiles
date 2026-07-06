@@ -7,7 +7,7 @@ Managed with [chezmoi](https://www.chezmoi.io/). Works on both Windows and Linux
 ### Linux
 
 ```sh
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply Despampanante/dotfiles
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply Despampanante/.dotfiles
 ```
 
 ### Windows
@@ -22,7 +22,7 @@ Then, in a new shell:
 
 ```powershell
 winget install twpayne.chezmoi
-chezmoi init --apply Despampanante/dotfiles
+chezmoi init --apply Despampanante/.dotfiles
 ```
 
 ## Legacy
