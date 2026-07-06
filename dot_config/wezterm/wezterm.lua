@@ -8,7 +8,7 @@ local act = wezterm.action
 local config = {}
 
 config.color_scheme = "Catppuccin Latte"
-config.font = wezterm.font("Iosevka Nerd Font Mono")
+config.font = wezterm.font("Iosevka Nerd Font")
 config.font_size = 16.0
 config.window_decorations = "RESIZE"
 
