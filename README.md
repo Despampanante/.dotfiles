@@ -25,6 +25,12 @@ winget install twpayne.chezmoi
 chezmoi init --apply Despampanante/.dotfiles
 ```
 
+## tmux
+
+Uses [catppuccin/tmux](https://github.com/catppuccin/tmux) via TPM. TPM itself is cloned automatically by a
+chezmoi run-once script (Linux-only; tmux isn't a native Windows tool). On first run inside tmux, press
+`<prefix> + I` (capital i) to have TPM fetch the plugins.
+
 ## Legacy
 
 Old Sway/waybar/qutebrowser/tmux/zsh Stow-based config lives on the [`legacy`](../../tree/legacy) branch.
