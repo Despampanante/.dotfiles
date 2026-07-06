@@ -12,6 +12,11 @@ config.font = wezterm.font("Iosevka Nerd Font")
 config.font_size = 16.0
 config.window_decorations = "RESIZE"
 
+-- WezTerm defaults to cmd.exe on Windows; use PowerShell 7 instead
+if wezterm.target_triple:find("windows") then
+	config.default_prog = { "pwsh.exe", "-NoLogo" }
+end
+
 config.leader = { key = "b", mods = "CTRL", timeout_milliseconds = 1000 }
 config.keys = {
 	{ key = "F11", mods = "NONE", action = act.ToggleFullScreen },
