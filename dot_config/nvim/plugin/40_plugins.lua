@@ -224,7 +224,7 @@ Config.now(function()
  -- Install only those that you need
  add({
    'https://github.com/sainnhe/everforest',
-   -- 'https://github.com/Shatur/neovim-ayu',
+   'https://github.com/Shatur/neovim-ayu',
    'https://github.com/ellisonleao/gruvbox.nvim',
    "https://github.com/catppuccin/nvim",
    "https://github.com/rebelot/kanagawa.nvim",
@@ -232,5 +232,5 @@ Config.now(function()
  })
 
   -- Enable only one
-  vim.cmd('color catppuccin-latte')
+  -- vim.cmd('color catppuccin-latte')
 end)

@@ -22,6 +22,7 @@
 -- General ====================================================================
 vim.g.mapleader = ' ' -- Use `<Space>` as <Leader> key
 
+vim.o.autoread    = true           -- Reload buffers changed outside of Neovim
 vim.o.mouse       = 'a'            -- Enable mouse
 vim.o.mousescroll = 'ver:25,hor:6' -- Customize mouse scroll
 vim.o.switchbuf   = 'usetab'       -- Use already opened buffers when switching
@@ -98,6 +99,16 @@ vim.o.completetimeout = 100                             -- Limit sources delay
 -- Do on `FileType` to always override these changes from filetype plugins.
 local f = function() vim.cmd('setlocal formatoptions-=c formatoptions-=o') end
 Config.new_autocmd('FileType', nil, f, "Proper 'formatoptions'")
+
+-- Check for changes on disk (respects 'autoread') on common events. Skip
+-- while in command-line mode to avoid interrupting it.
+local checktime_events = { 'FocusGained', 'TermLeave', 'BufEnter', 'WinEnter', 'CursorHold', 'CursorHoldI' }
+local checktime = function() if vim.fn.mode() ~= 'c' then vim.cmd('checktime') end end
+Config.new_autocmd(checktime_events, nil, checktime, 'Reload buffer if changed on disk')
+
+-- Notify when a buffer was reloaded from disk after an external change
+local notify_reload = function() vim.notify('File changed on disk. Buffer reloaded.') end
+Config.new_autocmd('FileChangedShellPost', nil, notify_reload, 'Notify about buffer reload')
 
 -- There are other autocommands created by 'mini.basics'. See 'plugin/30_mini.lua'.
 

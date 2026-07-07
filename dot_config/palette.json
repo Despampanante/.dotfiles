@@ -1,0 +1,43 @@
+{
+  "name": "warm-light",
+  "generator": "mini.hues",
+  "config": {
+    "background": "#ece4d8",
+    "foreground": "#2e2a22",
+    "n_hues": 8,
+    "saturation": "high"
+  },
+  "colors": {
+    "bg": "#ece4d8",
+    "bg_edge": "#f5ede0",
+    "bg_edge2": "#fdf5e9",
+    "bg_mid": "#cac3b7",
+    "bg_mid2": "#a9a196",
+
+    "fg": "#2e2a22",
+    "fg_edge": "#1f1c14",
+    "fg_edge2": "#0f0b05",
+    "fg_mid": "#4a463e",
+    "fg_mid2": "#69645b",
+
+    "accent": "#7e5701",
+    "accent_bg": "#ece4d8",
+
+    "red": "#6d0022",
+    "red_bg": "#ffabb4",
+    "orange": "#7d4200",
+    "orange_bg": "#ffc18d",
+    "yellow": "#6f6600",
+    "yellow_bg": "#f7ea5c",
+    "green": "#005f24",
+    "green_bg": "#95ffaa",
+    "cyan": "#008180",
+    "cyan_bg": "#61fffe",
+    "azure": "#005b86",
+    "azure_bg": "#90d4ff",
+    "blue": "#290774",
+    "blue_bg": "#b5b5ff",
+    "purple": "#570056",
+    "purple_bg": "#ffb8ff"
+  }
+}

@@ -45,20 +45,28 @@ QoL bindings on top of the defaults (prefix is `Ctrl+b`):
 
 ## WezTerm
 
-`dot_config/wezterm/wezterm.lua` uses WezTerm's built-in "Catppuccin Latte" scheme, since WezTerm bundles it
-directly (no plugin clone needed, unlike tmux). Also runs natively on Windows, so it doubles as a terminal
-multiplexer there (via WezTerm's own pane/tab system and `wezterm-mux-server` for detach/reattach), since
-tmux itself needs WSL/MSYS2 on Windows.
+`dot_config/wezterm/wezterm.lua` uses a custom warm-light scheme (`config.colors`), generated from
+`mini.hues` in the Neovim config — see [`docs/theming.md`](docs/theming.md) for how that palette is shared
+across apps (tmux, Discord, Windows). Runs natively on Windows, so it doubles as a terminal multiplexer
+there (via WezTerm's own pane/tab system and `wezterm-mux-server` for detach/reattach), since tmux itself
+needs WSL/MSYS2 on Windows.
 
 Leader key is `Ctrl+b`, matching the old tmux prefix:
 - `leader + %` / `leader + "` — split pane vertical/horizontal (tmux muscle memory)
 - `leader + h/j/k/l` — move between panes (vi-style, like the old tmux config)
 - `leader + r` — reload config (like tmux's `bind r source-file`)
+- `leader + c` / `n` / `p` / `0`-`9` / `,` / `&` (Shift) / `w` — tab management: new/next/previous/jump-to-number
+  /rename/close/interactive-list (tabs are numbered from 1, matching tmux's `base-index 1`)
 - `leader + f` — sessionizer: fuzzy-pick an existing WezTerm workspace or a project directory (scanned from
   `~/Documents`, `~/Documents/projects`, `~/Documents/gitClones` on Windows; `~` and `~/projects` elsewhere)
   and switch to/spawn a workspace named after it. WezTerm workspaces are the closest analog to tmux sessions,
   so this is the WezTerm-native version of tmux-sessionizer above (no fzf/tmux dependency — uses WezTerm's
   own `InputSelector` fuzzy finder).
+
+## Theming
+
+See [`docs/theming.md`](docs/theming.md) — a shared palette (`dot_config/palette.json`) drives Neovim, tmux,
+WezTerm, Discord (via Vencord), and Windows' accent color/wallpaper.
 
 ## Legacy
 

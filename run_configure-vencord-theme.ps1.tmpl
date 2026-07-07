@@ -1,0 +1,35 @@
+{{- if eq .chezmoi.os "windows" -}}
+# Ensures the Vencord (Discord client mod) theme matching the Neovim/tmux/WezTerm
+# warm-light palette (see 'AppData/Roaming/Vencord/themes/nvim-warm-light.theme.css')
+# stays enabled. Safe to run on every 'chezmoi apply': idempotent, skips quietly if
+# Vencord isn't installed yet, and only touches 'useQuickCss'/'enabledThemes'.
+
+$settingsPath = "$env:APPDATA\Vencord\settings\settings.json"
+$themeName = "nvim-warm-light.theme.css"
+
+if (-not (Test-Path $settingsPath)) {
+    Write-Output "Vencord not installed, skipping theme configuration"
+    exit 0
+}
+
+$settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+$changed = $false
+
+if (-not $settings.useQuickCss) {
+    $settings.useQuickCss = $true
+    $changed = $true
+}
+
+$currentThemes = @($settings.enabledThemes)
+if (($currentThemes.Count -ne 1) -or ($currentThemes[0] -ne $themeName)) {
+    $settings.enabledThemes = @($themeName)
+    $changed = $true
+}
+
+if ($changed) {
+    $settings | ConvertTo-Json -Depth 20 | Set-Content $settingsPath
+    Write-Output "Vencord theme configured: $themeName"
+} else {
+    Write-Output "Vencord theme already configured"
+}
+{{- end -}}

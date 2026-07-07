@@ -1,0 +1,95 @@
+{{- if eq .chezmoi.os "windows" -}}
+# Applies the Windows accent color + a solid wallpaper matching the palette in
+# 'dot_config/palette.json' (the same source used by Neovim/tmux/WezTerm/Discord).
+# Only re-runs when that file's content changes (hash below), since it restarts
+# Explorer to apply the accent color -- not something to do on every apply.
+#
+# palette hash: {{ include "dot_config/palette.json" | sha256sum }}
+#
+# Note: this only covers what Windows actually exposes (accent color, light/dark
+# mode, wallpaper). File Explorer's window background is hardcoded white/gray by
+# the Fluent design system and can't be recolored without a third-party shell
+# patcher (e.g. ExplorerPatcher, StartAllBack) -- intentionally not done here.
+# See docs/theming.md for the full picture and manual fallback steps.
+
+$palette = Get-Content "$HOME\.config\palette.json" -Raw | ConvertFrom-Json
+$accentHex = $palette.colors.accent -replace '^#', ''
+$bgHex = $palette.colors.bg -replace '^#', ''
+
+$r = [Convert]::ToInt32($accentHex.Substring(0, 2), 16)
+$g = [Convert]::ToInt32($accentHex.Substring(2, 2), 16)
+$b = [Convert]::ToInt32($accentHex.Substring(4, 2), 16)
+# Windows accent color registry values use 0xAABBGGRR (COLORREF w/ FF alpha).
+$accentColorRefHex = "FF{0:X2}{1:X2}{2:X2}" -f $b, $g, $r
+$accent = [Convert]::ToInt32($accentColorRefHex, 16)
+
+function Set-DWordUnsigned($Path, $Name, $Value) {
+    if (-not (Test-Path $Path)) { New-Item -Path $Path -Force | Out-Null }
+    New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType DWord -Force | Out-Null
+}
+
+# Light theme (apps + system)
+$personalize = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+Set-DWordUnsigned $personalize 'AppsUseLightTheme' 1
+Set-DWordUnsigned $personalize 'SystemUsesLightTheme' 1
+
+# DWM (window borders/title bars)
+$dwm = 'HKCU:\Software\Microsoft\Windows\DWM'
+Set-DWordUnsigned $dwm 'AccentColor' $accent
+Set-DWordUnsigned $dwm 'ColorizationColor' $accent
+Set-DWordUnsigned $dwm 'ColorizationAfterglow' $accent
+Set-DWordUnsigned $dwm 'ColorPrevalence' 1
+
+# Explorer accent (Start menu, taskbar, tiles)
+$explAccent = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Accent'
+Set-DWordUnsigned $explAccent 'AccentColorMenu' $accent
+Set-DWordUnsigned $explAccent 'StartColorMenu' $accent
+Set-DWordUnsigned $explAccent 'AccentColor' $accent
+Set-DWordUnsigned $explAccent 'StartColor' $accent
+Set-DWordUnsigned $explAccent 'ColorizationColor' $accent
+Set-DWordUnsigned $explAccent 'TaskbarColorOverride' 0
+Set-DWordUnsigned $explAccent 'ColorPrevalence' 1
+
+# Solid wallpaper matching the palette background
+Add-Type -AssemblyName System.Drawing
+$r2 = [Convert]::ToInt32($bgHex.Substring(0, 2), 16)
+$g2 = [Convert]::ToInt32($bgHex.Substring(2, 2), 16)
+$b2 = [Convert]::ToInt32($bgHex.Substring(4, 2), 16)
+$bmp = New-Object System.Drawing.Bitmap 1920, 1080
+$gfx = [System.Drawing.Graphics]::FromImage($bmp)
+$brush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb($r2, $g2, $b2))
+$gfx.FillRectangle($brush, 0, 0, 1920, 1080)
+$gfx.Dispose()
+$wallpaperPath = "$env:LOCALAPPDATA\nvim-warm-light-wallpaper.bmp"
+$bmp.Save($wallpaperPath, [System.Drawing.Imaging.ImageFormat]::Bmp)
+$bmp.Dispose()
+
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public class NvimThemeWin32 {
+    [DllImport("user32.dll", CharSet=CharSet.Auto)]
+    public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out UIntPtr lpdwResult);
+}
+'@
+$SPI_SETDESKWALLPAPER = 20
+$SPIF_UPDATEINIFILE = 0x01
+$SPIF_SENDCHANGE = 0x02
+[NvimThemeWin32]::SystemParametersInfo($SPI_SETDESKWALLPAPER, 0, $wallpaperPath, $SPIF_UPDATEINIFILE -bor $SPIF_SENDCHANGE) | Out-Null
+Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'Wallpaper' -Value $wallpaperPath
+Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'WallpaperStyle' -Value '10'
+Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'TileWallpaper' -Value '0'
+
+# Broadcast the change and restart Explorer so the taskbar/Start repaint immediately
+$HWND_BROADCAST = [IntPtr]0xffff
+$WM_SETTINGCHANGE = 0x001A
+$result = [UIntPtr]::Zero
+[NvimThemeWin32]::SendMessageTimeout($HWND_BROADCAST, $WM_SETTINGCHANGE, [UIntPtr]::Zero, "ImmersiveColorSet", 2, 5000, [ref]$result) | Out-Null
+Stop-Process -Name explorer -Force
+Start-Sleep -Milliseconds 500
+Start-Process explorer.exe
+
+Write-Output "Windows accent color and wallpaper applied from palette.json"
+{{- end -}}
