@@ -1,0 +1,40 @@
+{{- if eq .chezmoi.os "windows" -}}
+# Ensures the SSB vault uses the warm-light snippet matching the Neovim/tmux/WezTerm/Discord
+# palette (see 'Documents/SSB/dot_obsidian/snippets/warm-light.css'). Safe to run on every
+# 'chezmoi apply': idempotent, skips quietly if the vault isn't present, and only touches
+# 'theme'/'enabledCssSnippets' — leaves the rest of appearance.json (fonts, ribbon, etc.) alone.
+
+$appearancePath = "$env:USERPROFILE\Documents\SSB\.obsidian\appearance.json"
+$snippetName = "warm-light"
+
+if (-not (Test-Path $appearancePath)) {
+    Write-Output "SSB Obsidian vault not found, skipping theme configuration"
+    exit 0
+}
+
+$appearance = Get-Content $appearancePath -Raw | ConvertFrom-Json
+$changed = $false
+
+if ($appearance.theme -ne "light") {
+    $appearance.theme = "light"
+    $changed = $true
+}
+
+$currentSnippets = @($appearance.enabledCssSnippets | Where-Object { $_ })
+if ($currentSnippets -notcontains $snippetName) {
+    $newSnippets = @($currentSnippets + $snippetName)
+    if ($appearance.PSObject.Properties.Name -contains "enabledCssSnippets") {
+        $appearance.enabledCssSnippets = $newSnippets
+    } else {
+        $appearance | Add-Member -NotePropertyName "enabledCssSnippets" -NotePropertyValue $newSnippets
+    }
+    $changed = $true
+}
+
+if ($changed) {
+    $appearance | ConvertTo-Json -Depth 20 | Set-Content $appearancePath
+    Write-Output "Obsidian warm-light snippet enabled for SSB vault"
+} else {
+    Write-Output "Obsidian warm-light snippet already enabled"
+}
+{{- end -}}

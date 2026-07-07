@@ -66,7 +66,7 @@ Leader key is `Ctrl+b`, matching the old tmux prefix:
 ## Theming
 
 See [`docs/theming.md`](docs/theming.md) — a shared palette (`dot_config/palette.json`) drives Neovim, tmux,
-WezTerm, Discord (via Vencord), and Windows' accent color/wallpaper.
+WezTerm, Discord (via Vencord), Obsidian (SSB vault), and Windows' accent color/wallpaper.
 
 ## Legacy
 

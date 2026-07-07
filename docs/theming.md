@@ -13,6 +13,7 @@ the files below need updating by hand (or ask Claude to do it, quoting the new `
 | tmux | `dot_config/tmux/tmux.conf` | Status bar / pane border colors |
 | WezTerm | `dot_config/wezterm/wezterm.lua` | `config.colors` (ANSI 16-color table) |
 | Discord (via [Vencord](https://vencord.dev/)) | `AppData/Roaming/Vencord/themes/nvim-warm-light.theme.css` | See below |
+| Obsidian (SSB vault) | `Documents/SSB/dot_obsidian/snippets/warm-light.css` | See below |
 | Windows | registry (accent color) + solid wallpaper | See below |
 
 ## Discord (Vencord)
@@ -35,6 +36,27 @@ isn't installed yet.
 
 **Manual fallback**: Discord Settings → Vencord → Themes → toggle "Nvim Warm Light" on (and other themes off),
 make sure "Load Vencord CSS" (`useQuickCss`) is on. `Ctrl+R` reloads Discord to pick up CSS changes.
+
+## Obsidian
+
+`Documents/SSB/dot_obsidian/snippets/warm-light.css` is a CSS snippet overriding Obsidian's core color
+variables (`--background-primary`, `--text-normal`, `--interactive-accent`, etc.) to match the palette. It's
+scoped under `body.theme-light`, so it layers on top of whatever base theme/CSS theme is active (currently
+[Minimal](https://github.com/kepano/obsidian-minimal)) rather than replacing it. Minimal reroutes titlebar/
+tab/sidebar/divider/scrollbar colors through its own `--bg1-3`/`--ui1-3`/`--tx1-4`/`--ax1-3` variable layer
+instead of the core vars, so the snippet overrides those too — otherwise those elements stay near-white
+regardless of the core var overrides.
+
+Only wired up for the **SSB** vault, since Obsidian vaults live wherever the user puts them (not a fixed
+config path chezmoi already owns) and this is currently the only one using the shared palette.
+
+`run_configure-obsidian-theme.ps1.tmpl` runs on every `chezmoi apply` (Windows only) and ensures the snippet
+is enabled and the vault's theme is forced to light, by patching just those two keys in the vault's
+`appearance.json` — it leaves everything else (fonts, ribbon visibility, etc.) untouched, and is a no-op if
+the vault isn't found at `Documents/SSB`.
+
+**Manual fallback**: Obsidian Settings → Appearance → Base color scheme → Light; toggle on "warm-light"
+under CSS snippets (may need the folder-refresh icon if the snippet doesn't appear yet).
 
 ## Windows (accent color + wallpaper)
 

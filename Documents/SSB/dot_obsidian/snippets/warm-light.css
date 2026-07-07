@@ -1,0 +1,47 @@
+/* Warm-light palette (see dot_config/palette.json), matching Neovim/tmux/WezTerm/Discord. */
+
+body.theme-light {
+  /* Standard Obsidian core variables — respected directly by most themes. */
+  --background-primary: #ece4d8;
+  --background-primary-alt: #f5ede0;
+  --background-secondary: #f5ede0;
+  --background-secondary-alt: #fdf5e9;
+  --background-modifier-border: #cac3b7;
+  --background-modifier-border-hover: #a9a196;
+  --background-modifier-border-focus: #7e5701;
+  --background-modifier-form-field: #fdf5e9;
+
+  --text-normal: #2e2a22;
+  --text-muted: #69645b;
+  --text-faint: #a9a196;
+  --text-accent: #7e5701;
+  --text-accent-hover: #6a4a01;
+  --text-on-accent: #ece4d8;
+  --text-error: #6d0022;
+  --text-success: #005f24;
+
+  --interactive-normal: #f5ede0;
+  --interactive-hover: #fdf5e9;
+  --interactive-accent: #7e5701;
+  --interactive-accent-hover: #6a4a01;
+
+  --scrollbar-bg: #ece4d8;
+  --scrollbar-thumb-bg: #cac3b7;
+
+  /* Minimal theme (kepano) reroutes titlebar/tabs/sidebar/dividers/scrollbars through its own
+     bg1-3/ui1-3/tx1-4/ax1-3 layer instead of the core vars above, so it needs its own overrides
+     (see themes/Minimal/theme.css) — otherwise those elements stay near-white. */
+  --bg1: #ece4d8;
+  --bg2: #f5ede0;
+  --bg3: rgba(202, 195, 183, 0.35);
+  --ui1: #cac3b7;
+  --ui2: #a9a196;
+  --ui3: #7e5701;
+  --tx1: #2e2a22;
+  --tx2: #4a463e;
+  --tx3: #69645b;
+  --tx4: #4a463e;
+  --ax1: #7e5701;
+  --ax2: #6a4a01;
+  --ax3: #7e5701;
+}
