@@ -14,6 +14,7 @@ the files below need updating by hand (or ask Claude to do it, quoting the new `
 | WezTerm | `dot_config/wezterm/wezterm.lua` | `config.colors` (ANSI 16-color table) |
 | Discord (via [Vencord](https://vencord.dev/)) | `AppData/Roaming/Vencord/themes/nvim-warm-light.theme.css` | See below |
 | Obsidian (SSB vault) | `Documents/SSB/dot_obsidian/snippets/warm-light.css` | See below |
+| Chrome | manual only, via Settings UI | See below |
 | Windows | registry (accent color) + solid wallpaper | See below |
 
 ## Discord (Vencord)
@@ -57,6 +58,38 @@ the vault isn't found at `Documents/SSB`.
 
 **Manual fallback**: Obsidian Settings → Appearance → Base color scheme → Light; toggle on "warm-light"
 under CSS snippets (may need the folder-refresh icon if the snippet doesn't appear yet).
+
+## Chrome
+
+Chrome has no config file worth scripting — theming is manual through Settings, and only gets you "close
+enough," not a flat match, because of two built-in limits:
+
+- **Toolbar/tab color** (`chrome://settings` → paintbrush icon in the address bar → Colors) takes a single
+  seed color and runs it through Google's Material You algorithm to generate a full palette, so the rendered
+  shade isn't the literal hex you picked.
+- **New Tab Page background** (open a new tab → "Customize Chrome" button, bottom-right → Background →
+  upload an image) accepts an image, but Chrome overlays a subtle gradient/scrim on it for search-box/
+  shortcut legibility, so even a flat-color image renders slightly shaded.
+
+These two are also independent controls — there's no single setting that themes both the toolbar and the
+NTP background from one input.
+
+**Not achievable**: a byte-identical match to the palette, or automating this via Chrome's profile
+`Preferences` JSON (`browser.theme.user_color`/`color_variant` keys) — that file is only read at startup,
+undocumented, and version-fragile, so scripting it risks corrupting the profile for a cosmetic gain that a
+few manual clicks already gets close to.
+
+**Manual steps**:
+1. Address bar → paintbrush icon → Colors → Custom → enter the palette's `accent` (`#7e5701`) → toggle Light.
+2. New tab → "Customize Chrome" → Background → upload a flat `bg`-colored (`#ece4d8`) image. A ready-made one
+   (converted from the Windows wallpaper below) can be regenerated any time with:
+   ```powershell
+   Add-Type -AssemblyName System.Drawing
+   $img = [System.Drawing.Image]::FromFile("$env:LOCALAPPDATA\nvim-warm-light-wallpaper.bmp")
+   $img.Save("$env:USERPROFILE\Downloads\warm-light-background.png", [System.Drawing.Imaging.ImageFormat]::Png)
+   $img.Dispose()
+   ```
+   (requires the Windows wallpaper script below to have run at least once, so the `.bmp` source exists)
 
 ## Windows (accent color + wallpaper)
 

@@ -44,7 +44,7 @@ config.font_size = 16.0
 config.window_decorations = "RESIZE"
 
 -- Number tabs from 1, like `base-index 1` in tmux
-config.tab_and_split_indices_are_zero_indexed = false
+config.tab_and_split_indices_are_zero_based = false
 
 -- WezTerm defaults to cmd.exe on Windows; use PowerShell 7 instead
 if wezterm.target_triple:find("windows") then
@@ -195,7 +195,7 @@ config.keys = {
 
 -- switch to tab by number (1-9, then 0 for the 10th), like `bind 0-9 select-window` in tmux.
 -- ActivateTab's index is always 0-based regardless of
--- 'tab_and_split_indices_are_zero_indexed', so subtract 1 from the displayed number.
+-- 'tab_and_split_indices_are_zero_based', so subtract 1 from the displayed number.
 for i = 1, 10 do
 	table.insert(config.keys, { key = tostring(i % 10), mods = "LEADER", action = act.ActivateTab(i - 1) })
 end
