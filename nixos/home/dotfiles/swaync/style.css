@@ -1,0 +1,86 @@
+/* SwayNotificationCenter — warm-light palette (see ~/.config/palette.json) */
+
+* {
+    font-family: Iosevka;
+    font-size: 13px;
+}
+
+.notification-row:focus,
+.notification-row:hover {
+    background: transparent;
+}
+
+.notification {
+    border-radius: 8px;
+    margin: 6px 12px;
+    padding: 4px;
+    border: 1px solid #7e5701;
+    background: #f5ede0;
+}
+
+.notification-content {
+    background: transparent;
+    padding: 6px;
+}
+
+.notification .summary {
+    color: #2e2a22;
+    font-weight: bold;
+}
+
+.notification .body {
+    color: #4a463e;
+}
+
+.notification .time {
+    color: #69645b;
+}
+
+.notification .close-button {
+    background: #cac3b7;
+    color: #2e2a22;
+    border-radius: 100%;
+    padding: 2px 6px 4px 6px;
+}
+
+.notification .close-button:hover {
+    background: #7e5701;
+    color: #ece4d8;
+}
+
+.control-center {
+    background: #ece4d8;
+    border: 1px solid #7e5701;
+    border-radius: 8px;
+}
+
+.control-center-list {
+    background: transparent;
+}
+
+.widget-title {
+    color: #2e2a22;
+    padding: 8px;
+}
+
+.widget-title > button {
+    background: #cac3b7;
+    color: #2e2a22;
+    border-radius: 6px;
+}
+
+.widget-dnd {
+    color: #2e2a22;
+    padding: 8px;
+}
+
+.widget-dnd > switch:checked {
+    background: #7e5701;
+}
+
+.widget-mpris {
+    background: #f5ede0;
+    border-radius: 8px;
+    margin: 6px 12px;
+    padding: 8px;
+}

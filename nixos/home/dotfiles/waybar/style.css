@@ -1,0 +1,114 @@
+/* =============================================================================
+ * Waybar style — warm-light palette (see ~/.config/palette.json, source of
+ * truth: Despampanante/.dotfiles). Recolored from the legacy Arc-Dark scheme:
+ * light bar background + dark text instead of dark bar + light text.
+ * =========================================================================== */
+
+@define-color bg      #f5ede0; /* palette bg_edge */
+@define-color fg      #2e2a22; /* palette fg */
+@define-color accent  #7e5701; /* palette accent */
+@define-color warning #7d4200; /* palette orange */
+@define-color critical #6d0022; /* palette red */
+
+@keyframes blink-warning {
+    70% { color: @fg; }
+    to  { color: @fg; background-color: @warning; }
+}
+
+@keyframes blink-critical {
+    70% { color: @fg; }
+    to  { color: @fg; background-color: @critical; }
+}
+
+* {
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+    margin: 1px;
+    padding: 0;
+}
+
+#waybar {
+    background: transparent;
+    color: @fg;
+    background-color: @bg;
+    font-family: Iosevka;
+    font-size: 14px;
+}
+
+#battery,
+#clock,
+#backlight,
+#custom-launcher,
+#pulseaudio,
+#tray,
+#custom-power {
+    padding: 0.5rem 0.6rem;
+    margin: 1px 0px;
+}
+
+#battery.warning { color: @warning; }
+#battery.critical { color: @critical; }
+#battery.warning.discharging {
+    animation-name: blink-warning;
+    animation-duration: 3s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+#battery.critical.discharging {
+    animation-name: blink-critical;
+    animation-duration: 2s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+#mode {
+    background: @accent;
+    color: @bg;
+    margin-left: 5px;
+    padding: 7px;
+}
+
+#pulseaudio.muted { color: @accent; }
+
+#custom-notification {
+    padding: 0.5rem 0.6rem;
+    font-size: 15px;
+}
+#pulseaudio { padding-top: 6px; }
+
+#window { font-weight: bold; }
+
+#workspaces { font-size: 13px; }
+#workspaces button {
+    border-bottom: 3px solid transparent;
+    margin-bottom: 0px;
+    padding: 0px;
+}
+#workspaces button.focused {
+    border-bottom: 3px solid @accent;
+    margin-bottom: 1px;
+}
+#workspaces button.urgent {
+    border-color: @critical;
+    color: @critical;
+}
+
+#custom-power {
+    margin-left: 15px;
+    margin-right: 15px;
+    font-size: 15px;
+}
+
+#custom-launcher {
+    font-size: 15px;
+    margin-left: 15px;
+    margin-right: 10px;
+}
+
+#backlight.icon {
+    padding-right: 1px;
+    font-size: 13px;
+}

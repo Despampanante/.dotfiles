@@ -1,0 +1,136 @@
+// Waybar config (niri session) — same as ./config but with sway/* modules
+// swapped for niri's native equivalents. No "mode" module — niri doesn't
+// have sway's resize-mode concept. Spawned explicitly via
+// `waybar -c ~/.config/waybar/config-niri -s ~/.config/waybar/style.css`
+// from niri's spawn-at-startup (niri has no built-in `bar {}` directive
+// like sway does).
+{
+    "layer": "top",
+    "position": "top",
+    "height": 30,
+
+    "modules-left": [
+        "niri/workspaces"
+    ],
+
+    "modules-center": [
+        "niri/window"
+    ],
+
+    "modules-right": [
+        "pulseaudio",
+        "battery",
+        "backlight#icon",
+        "backlight#value",
+        "custom/notification",
+        "clock",
+        "tray",
+        "custom/power"
+    ],
+
+    "battery": {
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{capacity}% {icon}",
+        "format-charging": "{capacity}% ",
+        "format-plugged": "{capacity}% ",
+        "format-icons": ["", "", "", "", ""]
+    },
+
+    "clock": {
+        "interval": 10,
+        "format-alt": " {:%e %b %Y}",
+        "format": "{:%H:%M}",
+        "tooltip-format": "{:%e %B %Y}"
+    },
+
+    "niri/window": {
+        "format": "{}",
+        "max-length": 60
+    },
+
+    "niri/workspaces": {
+        "format": "  {icon}  ",
+        "format-icons": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": ""
+        }
+    },
+
+    "pulseaudio": {
+        "scroll-step": 1,
+        "format": "{volume}% {icon}",
+        "format-bluetooth": "{volume}% {icon}  {format_source}",
+        "format-bluetooth-muted": " {icon}  {format_source}",
+        "format-muted": "婢 {format_source}",
+        "format-source": "{volume}% ",
+        "format-source-muted": "",
+        "format-icons": {
+            "headphone": "",
+            "hands-free": "וֹ",
+            "headset": "  ",
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": [""]
+        },
+        "on-click": "pavucontrol",
+        "on-scroll-up": "pactl set-sink-volume @DEFAULT_SINK@ +2%",
+        "on-scroll-down": "pactl set-sink-volume @DEFAULT_SINK@ -2%"
+    },
+
+    "tray": {
+        "icon-size": 18,
+        "spacing": 10
+    },
+
+    "backlight#icon": {
+        "format": "{icon}",
+        "format-icons": [""],
+        "on-scroll-down": "brightnessctl -c backlight set 1%-",
+        "on-scroll-up": "brightnessctl -c backlight set +1%"
+    },
+
+    "backlight#value": {
+        "format": "{percent}%",
+        "on-scroll-down": "brightnessctl -c backlight set 1%-",
+        "on-scroll-up": "brightnessctl -c backlight set +1%"
+    },
+
+    "custom/launcher": {
+        "format": " ",
+        "on-click": "exec fuzzel",
+        "tooltip": false
+    },
+
+    "custom/notification": {
+        "tooltip": false,
+        "format": "{icon}",
+        "format-icons": {
+            "notification": "<span foreground='#6d0022'></span>",
+            "none": "",
+            "dnd-notification": "<span foreground='#6d0022'></span>",
+            "dnd-none": "",
+            "inhibited-notification": "<span foreground='#6d0022'></span>",
+            "inhibited-none": "",
+            "dnd-inhibited-notification": "<span foreground='#6d0022'></span>",
+            "dnd-inhibited-none": ""
+        },
+        "return-type": "json",
+        "exec-if": "which swaync-client",
+        "exec": "swaync-client -swb",
+        "on-click": "swaync-client -t -sw",
+        "on-click-right": "swaync-client -d -sw",
+        "escape": true
+    },
+
+    "custom/power": {
+        "format": "⏻",
+        "on-click": "exec ~/.config/waybar/scripts/power-menu.sh",
+        "tooltip": false
+    }
+}

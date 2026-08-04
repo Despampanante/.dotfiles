@@ -1,0 +1,20 @@
+# Warm-light palette (see ~/.config/palette.json). No lock-screen image
+# asset carried over from the old dotfiles — flat color fill instead.
+indicator-caps-lock
+color=ece4d8
+font=Iosevka
+font-size=20
+
+# Ring
+indicator-radius=115
+line-color=a9a196
+text-color=2e2a22
+inside-color=ece4d8c8
+inside-ver-color=7e5701
+line-ver-color=7e5701
+ring-ver-color=7e5701c8
+ring-color=cac3b7
+key-hl-color=7e5701
+separator-color=cac3b7
+layout-text-color=2e2a22
+line-wrong-color=6d0022
