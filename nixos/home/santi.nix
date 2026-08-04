@@ -36,9 +36,10 @@
     };
   };
 
-  # Prompt, themed to match palette.json's warm-light colors (accent/purple/
-  # red/green — see nixos/DECISIONS.md). enableZshIntegration defaults to
-  # true, so this hooks into programs.zsh above automatically.
+  # Prompt. Colors reference catppuccin/nix's generated palette (peach/mauve/
+  # red/green — see DECISIONS.md), merged in via catppuccin.starship below.
+  # enableZshIntegration defaults to true, so this hooks into programs.zsh
+  # above automatically.
   programs.starship = {
     enable = true;
     settings = {
@@ -46,25 +47,25 @@
       format = "$directory$git_branch$git_status$character";
 
       directory = {
-        style = "bold #7e5701"; # accent
+        style = "bold peach";
         truncation_length = 3;
         truncate_to_repo = true;
       };
 
       git_branch = {
-        style = "#570056"; # purple
+        style = "mauve";
         format = "[ $symbol$branch]($style)";
         symbol = " ";
       };
 
       git_status = {
-        style = "#6d0022"; # red
+        style = "red";
         format = "[$all_status$ahead_behind]($style)";
       };
 
       character = {
-        success_symbol = "[❯](bold #005f24)"; # green
-        error_symbol = "[❯](bold #6d0022)"; # red
+        success_symbol = "[❯](bold green)";
+        error_symbol = "[❯](bold red)";
       };
     };
   };
@@ -80,6 +81,56 @@
     executable = true;
   };
 
+  imports = [ ./waybar.nix ];
+
+  # fuzzel and swaylock moved to the real home-manager modules (from plain
+  # xdg.configFile) so catppuccin.fuzzel/catppuccin.swaylock can merge their
+  # generated colors in via `programs.<app>.settings` — see DECISIONS.md.
+  programs.fuzzel = {
+    enable = true;
+    settings = {
+      main = {
+        font = "Iosevka Nerd Font:size=11";
+        prompt = "❯";
+        icon-theme = "Adwaita";
+        terminal = "wezterm";
+        layer = "overlay";
+      };
+      border = {
+        width = 2;
+        radius = 6;
+      };
+      dmenu.exit-immediately-if-empty = "yes";
+    };
+  };
+
+  programs.swaylock = {
+    enable = true;
+    settings = {
+      indicator-caps-lock = true;
+      font = "Iosevka Nerd Font";
+      font-size = 20;
+      indicator-radius = 115;
+    };
+  };
+
+  catppuccin = {
+    enable = true;
+    autoEnable = false;
+    flavor = "latte";
+    accent = "peach";
+
+    fuzzel.enable = true;
+    swaylock.enable = true;
+    starship.enable = true;
+    gtk.icon.enable = true;
+    cursors.enable = true;
+    # waybar is enabled in ./waybar.nix, next to the rest of its config.
+    # sway/niri/swaync stay hand-applied — see DECISIONS.md for why.
+  };
+
+  gtk.enable = true;
+
   xdg.configFile = {
     "palette.json".source = ./dotfiles/palette.json;
     "nvim".source = ./dotfiles/nvim;
@@ -87,9 +138,6 @@
     "wezterm".source = ./dotfiles/wezterm;
     "sway".source = ./dotfiles/sway;
     "niri".source = ./dotfiles/niri;
-    "waybar".source = ./dotfiles/waybar;
-    "fuzzel".source = ./dotfiles/fuzzel;
     "swaync".source = ./dotfiles/swaync;
-    "swaylock".source = ./dotfiles/swaylock;
   };
 }

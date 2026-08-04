@@ -1,21 +1,22 @@
 /* =============================================================================
- * Waybar style — Catppuccin Latte (official palette, catppuccin.com/palette).
- * Layout (floating bar, pill-grouped modules) unchanged from the hand-rolled
- * warm-light version — only the colors are swapped. Floating bar: margin/
+ * Waybar style — Catppuccin Latte. Colors below alias catppuccin/nix's own
+ * generated palette (imported ahead of this file by catppuccin.waybar, see
+ * home/waybar.nix — @accent is already defined there too, from
+ * catppuccin.accent). Layout (floating bar, pill-grouped modules) is ours,
+ * unchanged from the original hand-rolled version. Floating bar: margin/
  * rounding/shadow live here, but the actual gap from the screen edge is set
- * via margin-top/left/right in config and config-niri (layer-shell margin,
- * not CSS margin).
+ * via margin-top/left/right in home/waybar.nix (layer-shell margin, not CSS
+ * margin).
  * =========================================================================== */
 
-@define-color bg       #e6e9ef; /* latte mantle — bar background */
-@define-color bg2      #ccd0da; /* latte surface0 — pill/group background */
-@define-color divider  #acb0be; /* latte surface2 */
-@define-color fg       #4c4f69; /* latte text */
-@define-color fg-muted #6c6f85; /* latte subtext0 — unfocused workspace numbers */
-@define-color accent   #fe640b; /* latte peach */
-@define-color accent-fg #eff1f5; /* latte base — text on filled accent/critical */
-@define-color warning  #df8e1d; /* latte yellow */
-@define-color critical #d20f39; /* latte red */
+@define-color bg        @mantle;   /* bar background */
+@define-color bg2       @surface0; /* pill/group background */
+@define-color divider   @surface2;
+@define-color fg        @text;
+@define-color fg-muted  @subtext0; /* unfocused workspace numbers */
+@define-color accent-fg @base;     /* text on filled accent/critical */
+@define-color warning   @yellow;
+@define-color critical  @red;
 
 @keyframes blink-warning {
     70% { color: @fg; }

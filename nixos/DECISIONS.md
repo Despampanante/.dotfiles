@@ -291,3 +291,104 @@ from the redesign above (that part you liked) and only swapping colors.
   Pango/browser-level, not part of GTK's CSS subset); waybar logged a parse
   error on it. Harmless (GTK just skips unknown properties) but removed
   since it did nothing.
+
+## Rewired waybar/fuzzel/swaylock/starship through catppuccin/nix for real
+
+You said to stop worrying about Windows portability for now and do whatever
+was actually best on the Nix side — that removes the reason the hand-applied
+approach above was chosen over catppuccin's real nix module. Switched to the
+module for everywhere it cleanly fits.
+
+**Added the `catppuccin` flake input**, applied as a `home-manager.sharedModules`
+entry in `flake.nix` (so it's available regardless of which host imports
+`home/santi.nix`, in case a `laptop` host is added later). Global settings in
+`home/santi.nix`: `catppuccin.enable = true`, `catppuccin.autoEnable = false`
+(explicit per-app opt-in rather than theming everything automatically),
+`flavor = "latte"`, `accent = "peach"`.
+
+**waybar** — moved to a new `home/waybar.nix`, using the real
+`programs.waybar` home-manager module instead of a plain `xdg.configFile`
+directory symlink. `catppuccin.waybar.enable` (mode `prependImport`, the
+default) prepends `@import ".../latte.css"; @define-color accent @peach;`
+ahead of our own `style.css`, which now aliases its semantic color names
+(`bg`, `bg2`, `divider`, etc.) onto catppuccin's real ones (`@mantle`,
+`@surface0`, `@surface2`, ...) instead of hardcoded hex — verified by reading
+the actual generated `style.css` out of the build, imports and aliases both
+resolve correctly. Bonus this unlocks: `programs.waybar.style`/`.settings`
+have an `onChange` hook that sends waybar `SIGUSR2` automatically on
+activation, so `nixos-rebuild switch` now reloads waybar itself — the manual
+`pkill -SIGUSR2 waybar` step from earlier isn't needed for changes made
+through this module anymore.
+- `programs.waybar.settings` needed to be `[ swayBarConfig ]` (a list), not
+  the bar attrset directly — passing it bare triggers a confusing assertion
+  (`the .modules option has been removed`) because the module treats a bare
+  attrset as *multiple named bars* and reads each of *our* top-level keys as
+  a candidate bar, and our `group/status`/`group/system` module lists happen
+  to have their own (legitimate) `modules` key, colliding with the deprecated
+  top-level wrapper the assertion is actually checking for. Wrapping in a
+  list sidesteps the ambiguity entirely.
+- Sway and niri need different bar configs (niri spawns waybar explicitly
+  with `-c config-niri`, no native `bar {}` block), but `programs.waybar`
+  only ever manages one `waybar/config`. Factored the shared module
+  definitions (everything except `modules-left`/`modules-center` and the
+  workspace/window modules) into one Nix `let` binding, merged (`shared //
+  {...}`) into `swayBar` (used by `programs.waybar.settings`) and `niriBar`
+  (hand-generated via `pkgs.formats.json{}.generate` into
+  `xdg.configFile."waybar/config-niri"`, since niri's variant isn't a
+  first-class `programs.waybar` bar) — avoids the two configs drifting out
+  of sync the way the old hand-duplicated JSON files could.
+- Deleted `home/dotfiles/waybar/{config,config-niri}` — both fully
+  superseded by `home/waybar.nix`. `style.css` and `scripts/` stay as plain
+  files (still referenced via `builtins.readFile` / `xdg.configFile`).
+
+**fuzzel** and **swaylock** moved from plain `xdg.configFile` symlinks to the
+real `programs.fuzzel`/`programs.swaylock` modules — required since
+`catppuccin.fuzzel`/`catppuccin.swaylock` set `settings.main.include`/merge
+colors into `programs.<app>.settings`, an option that only exists on the
+structured modules. Our own settings (font/prompt/border for fuzzel;
+indicator-radius/font for swaylock) live alongside catppuccin's
+contributions in the same `settings` attrset — different keys, so they merge
+without conflict. Deleted the now-dead `home/dotfiles/{fuzzel,swaylock}`
+files. Checked the actual generated `swaylock` config out of the build: it's
+noticeably richer than the hand-applied version — distinct colors per state
+(caps-lock/clear/verifying/wrong) using rosewater/green/blue/maroon, not
+just one flat accent everywhere. Wasn't going to hand-design that; this is
+the real payoff of using the module instead of copying hex values.
+
+**starship** — `catppuccin.starship.enable` merges a `palettes.catppuccin_latte`
+table into `programs.starship.settings` and sets `palette = "catppuccin_latte"`.
+Changed our own style strings from hardcoded hex (`"bold #7e5701"`) to
+palette names (`"bold peach"`, `"mauve"`, `"red"`, `"green"`) — starship
+resolves named colors against the active palette. Not shared with Windows at
+all (always pure `programs.starship`-generated Nix config), so no portability
+consideration here either way.
+
+**Added as pure bonus** (zero conflict risk, nothing existed here before):
+`catppuccin.gtk.icon.enable` (Papirus-Light icon theme recolored to peach)
+plus `gtk.enable = true` so GTK apps actually pick it up, and
+`catppuccin.cursors.enable` (proper cursor theme — we'd never set one at
+all before this). These two together are why the very first build after
+this change was unusually slow: `catppuccin-cursors` isn't on the regular
+NixOS binary cache and had to compile the icon/cursor variants from source.
+One-time cost — cached in the Nix store after this, not repeated on future
+rebuilds unless the `catppuccin` flake input itself gets bumped.
+
+**Deliberately left alone**: sway's own theme file, niri's focus-ring, and
+swaync all stay hand-applied Catppuccin Latte hex (from the section above),
+not switched to `catppuccin/nix`:
+- `catppuccin.sway` requires the real `wayland.windowManager.sway` module
+  (`extraConfigEarly = "include theme;"`), which would mean translating our
+  whole `config.d/*` include structure into that module instead of plain
+  files — a much bigger lift for a benefit that's just border colors.
+- **niri has no catppuccin module at all** (checked the actual module list
+  in the flake — not present), so niri's focus-ring colors need hand-editing
+  regardless of what we do for sway. Given that, keeping sway hand-applied
+  too (rather than half-migrating just one of the two compositors) keeps
+  them consistent with minimal extra code.
+- `catppuccin.swaync` sets `services.swaync.style` directly (a single
+  path/string, not a mergeable list) with no layering mechanism shown for
+  adding our own extra CSS (the custom notification-card padding/radius,
+  mpris widget styling, etc.) on top — using it as-is would mean losing
+  that custom styling, which wasn't part of the ask. Revisit if you're
+  willing to drop the custom card styling in exchange for auto-theming, or
+  if we find a cleaner way to layer both.

@@ -8,9 +8,11 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    catppuccin.url = "github:catppuccin/nix";
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }@inputs: {
+  outputs = { self, nixpkgs, home-manager, catppuccin, ... }@inputs: {
     nixosConfigurations = {
       # This VM. Once migrated to the laptop, add a "laptop" host here with
       # its own hardware-configuration.nix (regenerate via
@@ -25,6 +27,7 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.santi = import ./home/santi.nix;
+            home-manager.sharedModules = [ catppuccin.homeModules.catppuccin ];
           }
         ];
       };
