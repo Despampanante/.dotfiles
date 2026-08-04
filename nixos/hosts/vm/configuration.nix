@@ -70,6 +70,17 @@
   services.printing.enable = true;
   hardware.bluetooth.enable = true;
 
+  # Needed for sway/niri (both wlroots-based) to get a working GL context at
+  # all — without this, Mesa/EGL isn't set up and the compositor crashes
+  # right after SDDM hands off to it (symptom: SDDM login works, but you land
+  # on a blank console with a blinking cursor after picking a session).
+  hardware.graphics.enable = true;
+
+  # VirtualBox's virtual GPU doesn't support hardware cursor planes, which
+  # crashes wlroots compositors without this — the standard workaround for
+  # sway/niri under VirtualBox.
+  environment.sessionVariables.WLR_NO_HARDWARE_CURSORS = "1";
+
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
