@@ -49,6 +49,7 @@ binds {
     Mod+Q { close-window; }
     Mod+Shift+E { quit; }
     Mod+Escape { spawn "swaylock" "-f" "-C" "/home/santi/.config/swaylock/config"; }
+    Mod+Shift+Slash { show-hotkey-overlay; }
 
     Mod+H { focus-column-left; }
     Mod+L { focus-column-right; }
