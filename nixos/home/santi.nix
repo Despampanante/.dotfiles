@@ -36,6 +36,39 @@
     };
   };
 
+  # Prompt, themed to match palette.json's warm-light colors (accent/purple/
+  # red/green — see nixos/DECISIONS.md). enableZshIntegration defaults to
+  # true, so this hooks into programs.zsh above automatically.
+  programs.starship = {
+    enable = true;
+    settings = {
+      add_newline = true;
+      format = "$directory$git_branch$git_status$character";
+
+      directory = {
+        style = "bold #7e5701"; # accent
+        truncation_length = 3;
+        truncate_to_repo = true;
+      };
+
+      git_branch = {
+        style = "#570056"; # purple
+        format = "[ $symbol$branch]($style)";
+        symbol = " ";
+      };
+
+      git_status = {
+        style = "#6d0022"; # red
+        format = "[$all_status$ahead_behind]($style)";
+      };
+
+      character = {
+        success_symbol = "[❯](bold #005f24)"; # green
+        error_symbol = "[❯](bold #6d0022)"; # red
+      };
+    };
+  };
+
   home.packages = with pkgs; [
     fzf # needed by tmux-sessionizer
     ripgrep

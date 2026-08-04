@@ -174,3 +174,48 @@ What happened mechanically:
 - The old `~/nixos-config` local repo still exists on disk, untouched —
   left it alone rather than deleting it unilaterally. Safe to remove once
   you're happy with the merged version.
+
+## VirtualBox VM boot/graphics fixes
+
+While first booting into sway/niri on the VM, hit three separate issues,
+each fixed independently (none of these apply to the eventual laptop, which
+has real hardware/drivers — flagged here so they're not accidentally
+"fixed again" or mistaken for laptop-relevant config later):
+- **RCU stalls right after early boot** — VirtualBox's PIIX3 chipset has
+  known interrupt-routing bugs with I/O-APIC + SMP even with I/O-APIC
+  enabled. Fixed on the VirtualBox side (VM Settings → System → Motherboard
+  → Chipset → ICH9), not in the NixOS config.
+- **sway/niri crashing to a blank console right after SDDM handoff** —
+  `hardware.graphics.enable` was missing, so there was no working Mesa/EGL
+  setup for either compositor to get a GL context at all. Added it, plus
+  `environment.sessionVariables.WLR_NO_HARDWARE_CURSORS = "1"` (VirtualBox's
+  virtual GPU doesn't support hardware cursor planes — standard wlroots+
+  VirtualBox workaround). Both are in `hosts/vm/configuration.nix`; keep
+  `hardware.graphics.enable` for the laptop too (needed regardless of GPU),
+  but `WLR_NO_HARDWARE_CURSORS` was a VirtualBox-specific workaround — may
+  or may not be needed again once on real NVIDIA hardware, re-evaluate then.
+- **Still stalling on a blank screen after login even with both fixes above**
+  — turned out to be VirtualBox's Video Memory setting being too low for
+  wlroots to allocate compositing buffers. Fixed on the VirtualBox side (VM
+  Settings → Display → Video Memory, bumped up). Not a NixOS config issue at
+  all.
+
+## Prompt and WezTerm tab bar
+
+- **zsh prompt**: added `programs.starship`, themed with the warm-light
+  palette (`accent` for the directory segment, `purple` for git branch,
+  `red`/`green` for git status and the prompt character). Picked starship
+  over hand-writing zsh's `PROMPT` var since it's the actively-maintained
+  standard, ships a home-manager module that wires up zsh integration
+  automatically, and the icons it renders come from the same Iosevka Nerd
+  Font already installed for waybar/fuzzel/swaync.
+- **WezTerm tab bar hidden** (`config.enable_tab_bar = false`) rather than
+  recolored — confirmed with you first (it was showing grey, the WezTerm
+  default, not anything intentionally themed). Since the existing WezTerm
+  config already carries full tmux-style leader keybinds for tabs/splits and
+  tmux-sessionizer for workspaces, tmux is doing the actual multiplexing day
+  to day, so the native tab strip was redundant chrome rather than something
+  worth theming. Tab keybinds (leader+c/n/p/w, number switching) still work
+  with the bar hidden. Applied to both `nixos/home/dotfiles/wezterm/
+  wezterm.lua` and `windows/dot_config/wezterm/wezterm.lua` to keep the
+  still-duplicated copies in sync.

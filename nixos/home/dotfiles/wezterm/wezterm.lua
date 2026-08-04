@@ -43,6 +43,12 @@ config.font = wezterm.font("Iosevka Nerd Font")
 config.font_size = 16.0
 config.window_decorations = "RESIZE"
 
+-- tmux (via the leader keybinds below) does the multiplexing day to day, so
+-- the native tab strip is redundant screen space rather than themed — just
+-- hide it. Tab actions (leader+c/n/p/w, number switching) still work with no
+-- visible bar.
+config.enable_tab_bar = false
+
 -- Number tabs from 1, like `base-index 1` in tmux
 config.tab_and_split_indices_are_zero_based = false
 
