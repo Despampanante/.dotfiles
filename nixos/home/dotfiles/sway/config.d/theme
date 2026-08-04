@@ -7,7 +7,7 @@ gaps inner 6
 gaps outer 3
 default_border pixel 1
 smart_borders on
-font pango:Iosevka Regular 10
+font pango:Iosevka Nerd Font Regular 10
 
 # Flat color background instead of an image — matches the same "solid bg
 # fill" approach used for the Windows wallpaper in the warm-light theme.

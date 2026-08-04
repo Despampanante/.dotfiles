@@ -219,3 +219,36 @@ has real hardware/drivers — flagged here so they're not accidentally
   with the bar hidden. Applied to both `nixos/home/dotfiles/wezterm/
   wezterm.lua` and `windows/dot_config/wezterm/wezterm.lua` to keep the
   still-duplicated copies in sync.
+
+## Waybar: floating, pill-grouped redesign
+
+Mocked up three CSS directions (Current/Segmented/Floating) as an HTML
+preview rendered in the real palette values, rather than iterating blind
+through rebuild-reboot-look cycles. You picked **Floating**. Changes:
+- `config`/`config-niri`: added `margin-top`/`margin-left`/`margin-right: 8`
+  (the actual layer-shell gap — this is a waybar/wlr-layer-shell property,
+  not CSS margin) and bumped `height` 30 → 34. Right-side modules
+  (pulseaudio/battery/backlight, then notification/clock/tray/power) are now
+  wrapped in two `group/status` / `group/system` modules instead of listed
+  flat, since Waybar's CSS can't merge independent sibling widgets into one
+  visual pill — grouping is the only supported way to get a shared
+  background/radius around several modules.
+- `style.css`: `#waybar` gets `border-radius: 14px` and a soft box-shadow;
+  workspaces and the window title each get their own rounded pill
+  (`bg_edge2`); focused workspace changed from a bottom-border underline to
+  a filled accent pill. Thin `bg_mid` dividers separate sub-clusters within
+  each group (after pulseaudio, after the clock).
+
+### Font bug found along the way
+
+While debugging why workspace numbers weren't rendering, found `font-family:
+Iosevka` (missing the `Nerd Font` suffix) in `waybar/style.css` and
+`swaync/style.css`, plus `font=Iosevka:size=11` in `fuzzel/fuzzel.ini` and
+`font pango:Iosevka Regular 10` in `sway/config.d/theme` — all four were
+requesting the base Iosevka family, which doesn't contain the Nerd Font
+glyphs the icons/format-icons in those configs rely on (`wezterm.lua` was
+the only config already correctly using `"Iosevka Nerd Font"`). This is
+exactly the risk flagged as unverified in the "Not yet done" section above.
+Fixed all four to reference `Iosevka Nerd Font` explicitly. Worth a full
+visual pass after the next rebuild to confirm every icon (waybar, swaync,
+fuzzel prompt, sway window-border text) renders correctly now.

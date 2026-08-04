@@ -1,13 +1,17 @@
 /* =============================================================================
  * Waybar style — warm-light palette (see ~/.config/palette.json, source of
- * truth: Despampanante/.dotfiles). Recolored from the legacy Arc-Dark scheme:
- * light bar background + dark text instead of dark bar + light text.
+ * truth: Despampanante/.dotfiles). Floating bar: margin/rounding/shadow live
+ * here, but the actual gap from the screen edge is set via margin-top/left/
+ * right in config and config-niri (layer-shell margin, not CSS margin).
  * =========================================================================== */
 
-@define-color bg      #f5ede0; /* palette bg_edge */
-@define-color fg      #2e2a22; /* palette fg */
-@define-color accent  #7e5701; /* palette accent */
-@define-color warning #7d4200; /* palette orange */
+@define-color bg       #f5ede0; /* palette bg_edge — bar background */
+@define-color bg2      #fdf5e9; /* palette bg_edge2 — pill/group background */
+@define-color divider  #cac3b7; /* palette bg_mid */
+@define-color fg       #2e2a22; /* palette fg */
+@define-color fg-muted #69645b; /* palette fg_mid2 — unfocused workspace numbers */
+@define-color accent   #7e5701; /* palette accent */
+@define-color warning  #7d4200; /* palette orange */
 @define-color critical #6d0022; /* palette red */
 
 @keyframes blink-warning {
@@ -24,28 +28,89 @@
     border: none;
     border-radius: 0;
     min-height: 0;
-    margin: 1px;
+    margin: 0;
     padding: 0;
 }
 
 #waybar {
-    background: transparent;
-    color: @fg;
     background-color: @bg;
-    font-family: Iosevka;
+    color: @fg;
+    font-family: "Iosevka Nerd Font";
     font-size: 14px;
+    border-radius: 14px;
+    box-shadow:
+        0 4px 14px rgba(46, 42, 34, 0.18),
+        0 1px 2px rgba(46, 42, 34, 0.12);
 }
 
-#battery,
-#clock,
-#backlight,
-#custom-launcher,
+/* -- left: workspace pill -------------------------------------------------- */
+
+#workspaces {
+    background-color: @bg2;
+    border-radius: 10px;
+    padding: 3px;
+    margin: 0 0 0 10px;
+    font-size: 13px;
+}
+#workspaces button {
+    border-radius: 7px;
+    padding: 3px 9px;
+    margin: 0 1px;
+    color: @fg-muted;
+}
+#workspaces button.focused {
+    background-color: @accent;
+    color: @bg2;
+}
+#workspaces button.urgent {
+    background-color: @critical;
+    color: @bg2;
+}
+
+#mode {
+    background-color: @accent;
+    color: @bg2;
+    border-radius: 8px;
+    margin-left: 6px;
+    padding: 5px 10px;
+}
+
+/* -- center: window title pill --------------------------------------------- */
+
+#window {
+    background-color: @bg2;
+    border-radius: 10px;
+    padding: 5px 16px;
+    font-weight: bold;
+}
+
+/* -- right: two grouped pills (status, system) ------------------------------ */
+
+#group-status,
+#group-system {
+    background-color: @bg2;
+    border-radius: 10px;
+    padding: 0 12px;
+    margin: 0 10px 0 0;
+}
+#group-system { margin-right: 10px; }
+
 #pulseaudio,
+#battery,
+#backlight,
+#custom-notification,
+#clock,
 #tray,
 #custom-power {
-    padding: 0.5rem 0.6rem;
-    margin: 1px 0px;
+    padding: 0 5px;
 }
+
+#pulseaudio {
+    border-right: 1px solid @divider;
+    padding-right: 12px;
+    margin-right: 3px;
+}
+#pulseaudio.muted { color: @accent; }
 
 #battery.warning { color: @warning; }
 #battery.critical { color: @critical; }
@@ -64,51 +129,31 @@
     animation-direction: alternate;
 }
 
-#mode {
-    background: @accent;
-    color: @bg;
-    margin-left: 5px;
-    padding: 7px;
+#backlight.icon {
+    padding-right: 1px;
+    font-size: 13px;
 }
-
-#pulseaudio.muted { color: @accent; }
 
 #custom-notification {
-    padding: 0.5rem 0.6rem;
     font-size: 15px;
 }
-#pulseaudio { padding-top: 6px; }
 
-#window { font-weight: bold; }
-
-#workspaces { font-size: 13px; }
-#workspaces button {
-    border-bottom: 3px solid transparent;
-    margin-bottom: 0px;
-    padding: 0px;
-}
-#workspaces button.focused {
-    border-bottom: 3px solid @accent;
-    margin-bottom: 1px;
-}
-#workspaces button.urgent {
-    border-color: @critical;
-    color: @critical;
+#clock {
+    border-right: 1px solid @divider;
+    padding-right: 12px;
+    margin-right: 3px;
+    font-variant-numeric: tabular-nums;
 }
 
 #custom-power {
-    margin-left: 15px;
-    margin-right: 15px;
     font-size: 15px;
+    padding-left: 6px;
 }
+
+/* -- unused unless wired into modules-* (kept for whenever it is) ---------- */
 
 #custom-launcher {
     font-size: 15px;
     margin-left: 15px;
     margin-right: 10px;
-}
-
-#backlight.icon {
-    padding-right: 1px;
-    font-size: 13px;
 }

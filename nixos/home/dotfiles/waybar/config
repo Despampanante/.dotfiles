@@ -5,7 +5,10 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 30,
+    "height": 34,
+    "margin-top": 8,
+    "margin-left": 8,
+    "margin-right": 8,
 
     "modules-left": [
         "sway/workspaces",
@@ -17,15 +20,29 @@
     ],
 
     "modules-right": [
-        "pulseaudio",
-        "battery",
-        "backlight#icon",
-        "backlight#value",
-        "custom/notification",
-        "clock",
-        "tray",
-        "custom/power"
+        "group/status",
+        "group/system"
     ],
+
+    "group/status": {
+        "orientation": "horizontal",
+        "modules": [
+            "pulseaudio",
+            "battery",
+            "backlight#icon",
+            "backlight#value"
+        ]
+    },
+
+    "group/system": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/notification",
+            "clock",
+            "tray",
+            "custom/power"
+        ]
+    },
 
     "battery": {
         "states": {
