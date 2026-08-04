@@ -48,22 +48,22 @@ window#waybar {
     background-color: @bg;
     color: @fg;
     font-family: "Iosevka Nerd Font";
-    font-size: 14px;
-    border-radius: 14px;
+    font-size: 13px;
+    border-radius: 11px;
 }
 
 /* -- left: workspace pill -------------------------------------------------- */
 
 #workspaces {
     background-color: @bg2;
-    border-radius: 10px;
-    padding: 3px;
-    margin: 0 0 0 10px;
+    border-radius: 9px;
+    padding: 2px;
+    margin: 0 0 0 8px;
     font-size: 13px;
 }
 #workspaces button {
-    border-radius: 7px;
-    padding: 3px 9px;
+    border-radius: 6px;
+    padding: 2px 8px;
     margin: 0 1px;
     color: @fg-muted;
 }
@@ -79,30 +79,33 @@ window#waybar {
 #mode {
     background-color: @accent;
     color: @accent-fg;
-    border-radius: 8px;
+    border-radius: 7px;
     margin-left: 6px;
-    padding: 5px 10px;
+    padding: 3px 10px;
 }
 
 /* -- center: window title pill --------------------------------------------- */
 
 #window {
     background-color: @bg2;
-    border-radius: 10px;
-    padding: 5px 16px;
+    border-radius: 9px;
+    padding: 3px 16px;
     font-weight: bold;
 }
 
 /* -- right: two grouped pills (status, system) ------------------------------ */
+/* Waybar names "group/status" -> CSS id "#status" (the "group/" prefix is
+ * stripped, not turned into a hyphen like custom/* modules) -- #group-status
+ * silently matched nothing, which is why this never had a background. */
 
-#group-status,
-#group-system {
+#status,
+#system {
     background-color: @bg2;
-    border-radius: 10px;
+    border-radius: 9px;
     padding: 0 12px;
     margin: 0 10px 0 0;
 }
-#group-system { margin-right: 10px; }
+#system { margin-right: 10px; }
 
 #pulseaudio,
 #battery,

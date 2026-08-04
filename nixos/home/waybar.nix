@@ -14,10 +14,10 @@ let
   shared = {
     layer = "top";
     position = "top";
-    height = 34;
-    "margin-top" = 8;
-    "margin-left" = 8;
-    "margin-right" = 8;
+    height = 26;
+    "margin-top" = 6;
+    "margin-left" = 6;
+    "margin-right" = 6;
 
     "modules-right" = [ "group/status" "group/system" ];
 

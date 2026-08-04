@@ -468,3 +468,30 @@ Standard practice for floating wlr-layer-shell bars is to skip the shadow
 for exactly this reason, so removed `box-shadow` from `#waybar` rather than
 fight the platform. Rounding + margin still gives the floating look, just
 without the shadow.
+
+## Right-side pill background was silently matching nothing
+
+The right-side status icons never got the `#group-status`/`#group-system`
+pill background — they sat flush on the bar with no card behind them,
+visibly different from the left workspace pill and center title pill.
+Checked waybar's actual C++ source (`src/bar.cpp`) rather than guess again:
+for a module ref like `"group/status"`, waybar strips the `group/` prefix
+and uses **only the remainder** as the CSS id — `id_name =
+ref.substr(6, hash_pos - 6)` gives `"status"`, not `"group-status"`. That
+prefix-strip-to-hyphen behavior is specific to `custom/*` modules
+(`custom/notification` → `#custom-notification`); groups work differently
+and I'd wrongly assumed the same convention applied. Fixed the selectors to
+`#status`/`#system`. Also shrank the whole bar while in there (per your
+request): `height` 34→26, margins 8→6, and proportionally smaller
+padding/border-radius throughout (pills 10px→9px, `#waybar` 14px→11px).
+
+**Window border/sizing issue (still open)**: you also flagged the sway
+window border not fully wrapping on one side, and a window extending
+further down than expected. Checked whether waybar's margin-based floating
+layout could be under-reserving screen space (`gtk_layer_auto_exclusive_zone_enable`
+in waybar's source) — that function is specifically designed to account for
+layer-shell margins when reserving space, so it's unlikely to be the cause.
+Since this rebuild changes the bar's height/margins anyway, worth checking
+whether the issue is still there afterward before digging further — if it
+persists, need to know which compositor (sway/niri) and whether it's
+consistent or one-off.
