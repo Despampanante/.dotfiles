@@ -142,7 +142,6 @@
     border-right: 1px solid @divider;
     padding-right: 12px;
     margin-right: 3px;
-    font-variant-numeric: tabular-nums;
 }
 
 #custom-power {
