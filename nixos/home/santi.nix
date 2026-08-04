@@ -114,6 +114,11 @@
     };
   };
 
+  # catppuccin.cursors sets home.pointerCursor.name/.package but not .enable
+  # (upstream gap) -- home-manager now requires this explicitly or it's a
+  # deprecation warning on every rebuild.
+  home.pointerCursor.enable = true;
+
   catppuccin = {
     enable = true;
     autoEnable = false;
