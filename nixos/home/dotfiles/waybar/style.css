@@ -1,18 +1,21 @@
 /* =============================================================================
- * Waybar style — warm-light palette (see ~/.config/palette.json, source of
- * truth: Despampanante/.dotfiles). Floating bar: margin/rounding/shadow live
- * here, but the actual gap from the screen edge is set via margin-top/left/
- * right in config and config-niri (layer-shell margin, not CSS margin).
+ * Waybar style — Catppuccin Latte (official palette, catppuccin.com/palette).
+ * Layout (floating bar, pill-grouped modules) unchanged from the hand-rolled
+ * warm-light version — only the colors are swapped. Floating bar: margin/
+ * rounding/shadow live here, but the actual gap from the screen edge is set
+ * via margin-top/left/right in config and config-niri (layer-shell margin,
+ * not CSS margin).
  * =========================================================================== */
 
-@define-color bg       #f5ede0; /* palette bg_edge — bar background */
-@define-color bg2      #fdf5e9; /* palette bg_edge2 — pill/group background */
-@define-color divider  #cac3b7; /* palette bg_mid */
-@define-color fg       #2e2a22; /* palette fg */
-@define-color fg-muted #69645b; /* palette fg_mid2 — unfocused workspace numbers */
-@define-color accent   #7e5701; /* palette accent */
-@define-color warning  #7d4200; /* palette orange */
-@define-color critical #6d0022; /* palette red */
+@define-color bg       #e6e9ef; /* latte mantle — bar background */
+@define-color bg2      #ccd0da; /* latte surface0 — pill/group background */
+@define-color divider  #acb0be; /* latte surface2 */
+@define-color fg       #4c4f69; /* latte text */
+@define-color fg-muted #6c6f85; /* latte subtext0 — unfocused workspace numbers */
+@define-color accent   #fe640b; /* latte peach */
+@define-color accent-fg #eff1f5; /* latte base — text on filled accent/critical */
+@define-color warning  #df8e1d; /* latte yellow */
+@define-color critical #d20f39; /* latte red */
 
 @keyframes blink-warning {
     70% { color: @fg; }
@@ -60,16 +63,16 @@
 }
 #workspaces button.focused {
     background-color: @accent;
-    color: @bg2;
+    color: @accent-fg;
 }
 #workspaces button.urgent {
     background-color: @critical;
-    color: @bg2;
+    color: @accent-fg;
 }
 
 #mode {
     background-color: @accent;
-    color: @bg2;
+    color: @accent-fg;
     border-radius: 8px;
     margin-left: 6px;
     padding: 5px 10px;

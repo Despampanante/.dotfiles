@@ -26,8 +26,8 @@ layout {
 
     focus-ring {
         width 2
-        active-color "#7e5701"
-        inactive-color "#cac3b7"
+        active-color "#fe640b"
+        inactive-color "#acb0be"
     }
 
     border {
@@ -37,7 +37,7 @@ layout {
 
 prefer-no-csd
 
-spawn-at-startup "swaybg" "-c" "#ece4d8"
+spawn-at-startup "swaybg" "-c" "#eff1f5"
 spawn-at-startup "waybar" "-c" "/home/santi/.config/waybar/config-niri" "-s" "/home/santi/.config/waybar/style.css"
 spawn-at-startup "swaync"
 spawn-at-startup "nm-applet" "--indicator"

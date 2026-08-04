@@ -1,7 +1,7 @@
-# Theme — recolored for the "warm-light" palette (see ~/.config/palette.json,
-# source of truth: Despampanante/.dotfiles). Values are the palette's hex
-# codes, inlined by hand since sway config doesn't support variables/includes
-# of JSON — see docs/theming.md in this repo for the full picture across apps.
+# Theme — Catppuccin Latte (catppuccin.com/palette). Values are the
+# palette's hex codes, inlined by hand since sway config doesn't support
+# variables/includes of JSON — see docs/theming.md for the full picture
+# across apps.
 
 gaps inner 6
 gaps outer 3
@@ -10,19 +10,19 @@ smart_borders on
 font pango:Iosevka Nerd Font Regular 10
 
 # Flat color background instead of an image — matches the same "solid bg
-# fill" approach used for the Windows wallpaper in the warm-light theme.
-exec swaybg -c "#ece4d8"
+# fill" approach used for the Windows wallpaper.
+exec swaybg -c "#eff1f5"
 
 for_window [shell="xdg_shell"] title_format "%title (%app_id)"
 for_window [shell="x_wayland"] title_format "%class - %title"
 
 #                       border  bground text    indicator child_border
-client.focused          #7e5701 #7e5701 #ece4d8 #7e5701   #7e5701
-client.focused_inactive #a9a196 #a9a196 #2e2a22 #a9a196   #a9a196
-client.unfocused        #cac3b7 #cac3b7 #4a463e #cac3b7   #cac3b7
-client.urgent           #6d0022 #ffabb4 #0f0b05 #6d0022   #6d0022
-client.placeholder      #cac3b7 #ece4d8 #2e2a22 #cac3b7   #cac3b7
-client.background       #ece4d8
+client.focused          #fe640b #fe640b #eff1f5 #fe640b   #fe640b
+client.focused_inactive #acb0be #acb0be #4c4f69 #acb0be   #acb0be
+client.unfocused        #bcc0cc #bcc0cc #5c5f77 #bcc0cc   #bcc0cc
+client.urgent           #d20f39 #d20f39 #eff1f5 #d20f39   #d20f39
+client.placeholder      #bcc0cc #eff1f5 #4c4f69 #bcc0cc   #bcc0cc
+client.background       #eff1f5
 
 bar {
     swaybar_command waybar

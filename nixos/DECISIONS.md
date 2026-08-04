@@ -252,3 +252,42 @@ exactly the risk flagged as unverified in the "Not yet done" section above.
 Fixed all four to reference `Iosevka Nerd Font` explicitly. Worth a full
 visual pass after the next rebuild to confirm every icon (waybar, swaync,
 fuzzel prompt, sway window-border text) renders correctly now.
+
+## Switched the desktop chrome to Catppuccin Latte
+
+The hand-rolled warm-light waybar redesign wasn't landing well in practice
+(see screenshot review) — rather than keep iterating on a custom palette
+blind, switched to Catppuccin Latte's official published colors
+(catppuccin.com/palette), keeping the floating/pill-grouped waybar layout
+from the redesign above (that part you liked) and only swapping colors.
+
+- **Considered Catppuccin's actual nix module** (`catppuccin/nix`, which
+  patches home-manager's structured `programs.<app>.*` options to
+  auto-theme things) but didn't use it: every desktop config here
+  (waybar/swaync/fuzzel/sway/niri/swaylock) is deliberately a plain dotfile
+  symlinked via `xdg.configFile`, not wired through those structured
+  options — that's what lets the exact same files stay portable to Windows
+  in principle. The nix module has nothing to attach to as things are
+  structured now; using it for real would mean rewriting these into
+  Nix-generated config, a bigger change than "swap some colors." Revisit if
+  you decide the auto-theming is worth losing that portability property.
+- **Applied by hand instead** — same mechanism used for warm-light
+  originally, just Catppuccin's hex values instead of `mini.hues`-generated
+  ones. Accent picked: **peach** (`#fe640b`) — closest warm tone in Latte's
+  accent list to the old `#7e5701` gold/brown. Role mapping used throughout:
+  `mantle` (`#e6e9ef`) = bar/panel background, `surface0` (`#ccd0da`) = pill/
+  card background, `surface1`/`surface2` = borders/dividers/unfocused
+  window chrome, `text`/`subtext0`/`subtext1` = foreground text at
+  decreasing emphasis, `base` (`#eff1f5`) = flat desktop background fill
+  and text-on-filled-accent, `red` (`#d20f39`) = urgent/critical, `yellow`
+  (`#df8e1d`) = warning.
+- **Scope**: only the Linux desktop chrome (waybar, swaync, fuzzel, sway's
+  own theme file, niri's focus-ring, swaylock). Deliberately left `nvim`,
+  `tmux`, `wezterm.lua`, and `palette.json` on warm-light — those are
+  shared/duplicated with the Windows dotfiles side and weren't part of what
+  wasn't working; swapping those is a separate decision if you want it.
+- **Also dropped** `font-variant-numeric: tabular-nums` from waybar's
+  `#clock` rule — GTK's CSS engine doesn't implement that property (it's
+  Pango/browser-level, not part of GTK's CSS subset); waybar logged a parse
+  error on it. Harmless (GTK just skips unknown properties) but removed
+  since it did nothing.
