@@ -455,3 +455,16 @@ as solid black instead of the desktop showing through. Added a
 `window#waybar { background: transparent; }` rule alongside the existing
 `#waybar` styling — the window-node and the box-widget-node need the
 transparency set separately.
+
+**Follow-up: dropped the box-shadow entirely.** After the transparency fix,
+the shadow still looked wrong — hard-cut at the bar's edge instead of
+softly fading onto the desktop. This is a GTK layer-shell limitation, not
+something fixable with more CSS: the Wayland surface waybar gets is sized
+exactly to the visible content, with no extra "bleed" margin around it for
+a shadow to render into, so it just clips at the surface boundary. Properly
+fixing this means deliberately oversizing the surface and padding around
+the visible bar to give the shadow room — fragile, and not worth it here.
+Standard practice for floating wlr-layer-shell bars is to skip the shadow
+for exactly this reason, so removed `box-shadow` from `#waybar` rather than
+fight the platform. Rounding + margin still gives the floating look, just
+without the shadow.
