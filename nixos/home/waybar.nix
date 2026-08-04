@@ -38,7 +38,7 @@ let
       format = "{capacity}% {icon}";
       "format-charging" = "{capacity}% ";
       "format-plugged" = "{capacity}% ";
-      "format-icons" = [ "" "" "" "" "" ];
+      "format-icons" = [ "" "" "" "" "" ];
     };
 
     clock = {
@@ -57,13 +57,13 @@ let
       "format-source" = "{volume}% ";
       "format-source-muted" = "";
       "format-icons" = {
-        headphone = "";
+        headphone = "";
         "hands-free" = "וֹ";
-        headset = "  ";
-        phone = "";
-        portable = "";
-        car = "";
-        default = [ "" ];
+        headset = "  ";
+        phone = "";
+        portable = "";
+        car = "";
+        default = [ "" ];
       };
       "on-click" = "pavucontrol";
       "on-scroll-up" = "pactl set-sink-volume @DEFAULT_SINK@ +2%";
@@ -77,7 +77,7 @@ let
 
     "backlight#icon" = {
       format = "{icon}";
-      "format-icons" = [ "" ];
+      "format-icons" = [ "" ];
       "on-scroll-down" = "brightnessctl -c backlight set 1%-";
       "on-scroll-up" = "brightnessctl -c backlight set +1%";
     };
@@ -88,7 +88,7 @@ let
     };
 
     "custom/launcher" = {
-      format = " ";
+      format = " ";
       "on-click" = "exec fuzzel";
       tooltip = false;
     };
@@ -97,14 +97,14 @@ let
       tooltip = false;
       format = "{icon}";
       "format-icons" = {
-        notification = "<span foreground='#6d0022'></span>";
-        none = "";
-        "dnd-notification" = "<span foreground='#6d0022'></span>";
-        "dnd-none" = "";
-        "inhibited-notification" = "<span foreground='#6d0022'></span>";
-        "inhibited-none" = "";
-        "dnd-inhibited-notification" = "<span foreground='#6d0022'></span>";
-        "dnd-inhibited-none" = "";
+        notification = "<span foreground='#6d0022'></span>";
+        none = "";
+        "dnd-notification" = "<span foreground='#6d0022'></span>";
+        "dnd-none" = "";
+        "inhibited-notification" = "<span foreground='#6d0022'></span>";
+        "inhibited-none" = "";
+        "dnd-inhibited-notification" = "<span foreground='#6d0022'></span>";
+        "dnd-inhibited-none" = "";
       };
       "return-type" = "json";
       "exec-if" = "which swaync-client";
@@ -139,10 +139,10 @@ let
       "all-outputs" = true;
       format = "  {icon}  ";
       "format-icons" = {
-        "1" = "";
-        "2" = "";
-        "3" = "";
-        "4" = "";
+        "1" = "";
+        "2" = "";
+        "3" = "";
+        "4" = "";
       };
     };
   };
@@ -158,10 +158,10 @@ let
     "niri/workspaces" = {
       format = "  {icon}  ";
       "format-icons" = {
-        "1" = "";
-        "2" = "";
-        "3" = "";
-        "4" = "";
+        "1" = "";
+        "2" = "";
+        "3" = "";
+        "4" = "";
       };
     };
   };

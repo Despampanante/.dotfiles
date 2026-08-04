@@ -416,3 +416,42 @@ unmanaged files at a path home-manager wants now get renamed with a
 `.backup` suffix instead of blocking activation. Should make this whole
 class of error a non-issue going forward, including for any future
 restructuring like this one.
+
+## Waybar icon glyphs were empty strings this whole time
+
+First real look at the running bar showed no icons anywhere (workspace
+numbers, battery, volume, backlight, notification bell) and black-looking
+rounded corners. Two unrelated bugs, found by checking the actual generated
+files instead of guessing from the screenshot:
+
+**Icons**: every Nerd Font glyph in `home/waybar.nix` — workspace numbers,
+battery/volume/backlight icons, the notification bell — was a **literal
+empty string**, confirmed at the byte level (`len(v) == 0`), not just a
+wrong codepoint. This was true all the way back in the original
+`home/dotfiles/waybar/config` file too (checked via `git show` on the
+commit before it was deleted): the corruption happened when these Private
+Use Area glyphs were first transcribed out of the `legacy` branch, early in
+this project. My own read/transcribe of those bytes silently dropped them —
+PUA glyphs render as invisible with no font installed to show them, so
+copying "what I saw" copied nothing, and I never verified byte-for-byte.
+`⏻` (power) and `❯` (fuzzel prompt) survived because they're in normal
+Unicode ranges, not PUA — only the Nerd-Font-specific icons were affected.
+
+Fixed by reading the real bytes straight out of `origin/legacy`'s
+`.config/waybar/config` (`git show origin/legacy:.config/waybar/config`)
+and writing them into `home/waybar.nix` via a Python script operating on
+raw bytes — not by typing them, for the same reason they went missing the
+first time. Verified afterward by checking the *built* config's actual
+byte lengths, not just that the file "looked" non-empty. The notification
+bell/bell-slash icons don't have a legacy source (that module was designed
+fresh for swaync, not ported) — used standard Font Awesome codepoints
+(`` `nf-fa-bell` ``, `` `nf-fa-bell-slash` ``) instead.
+
+**Black rounded corners**: separate CSS issue. `#waybar`'s `border-radius`
+clips the visible pill, but the underlying GTK *window* wasn't marked
+transparent — Wayland surfaces are opaque by default, so the area outside
+the rounded corners (inside the window's actual rectangular bounds) showed
+as solid black instead of the desktop showing through. Added a
+`window#waybar { background: transparent; }` rule alongside the existing
+`#waybar` styling — the window-node and the box-widget-node need the
+transparency set separately.

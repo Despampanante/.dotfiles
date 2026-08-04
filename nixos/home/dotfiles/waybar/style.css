@@ -36,6 +36,14 @@
     padding: 0;
 }
 
+/* The GTK *window* node needs its own transparent background, separate
+ * from #waybar's — otherwise the corners cut off by #waybar's border-radius
+ * fall back to an opaque (black) surface instead of showing the desktop
+ * through, since Wayland windows aren't alpha-transparent by default. */
+window#waybar {
+    background: transparent;
+}
+
 #waybar {
     background-color: @bg;
     color: @fg;
