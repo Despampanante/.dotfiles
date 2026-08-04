@@ -28,6 +28,12 @@
             home-manager.useUserPackages = true;
             home-manager.users.santi = import ./home/santi.nix;
             home-manager.sharedModules = [ catppuccin.homeModules.catppuccin ];
+            # Pre-existing, non-symlinked files at a path home-manager wants
+            # to manage (leftover app defaults, or artifacts from switching
+            # xdg.configFile between whole-directory and per-file sources,
+            # like the waybar/fuzzel/swaylock restructuring) get backed up
+            # with this suffix instead of blocking activation.
+            home-manager.backupFileExtension = "backup";
           }
         ];
       };

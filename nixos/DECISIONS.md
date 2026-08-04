@@ -392,3 +392,27 @@ not switched to `catppuccin/nix`:
   that custom styling, which wasn't part of the ask. Revisit if you're
   willing to drop the custom card styling in exchange for auto-theming, or
   if we find a cleaner way to layer both.
+
+## `nixos-rebuild switch` clobber failures after the catppuccin restructuring
+
+First real `sudo nixos-rebuild switch` after the waybar/fuzzel/swaylock
+restructuring failed activation (`home-manager-santi.service` exit 1,
+"Existing file ... would be clobbered") for `waybar/{scripts,config-niri,
+style.css}`, `swaylock/config`, `fuzzel/fuzzel.ini`, `gtk-{3,4}.0/settings.ini`,
+and `~/.gtkrc-2.0` — one at a time, since each activation attempt only lists
+what it hits before bailing. Two different causes, same symptom:
+- `waybar`/`fuzzel`/`swaylock` used to be whole-directory `xdg.configFile`
+  symlinks; the restructuring switched them to managing individual files
+  inside those directories, and home-manager won't blow away the old
+  directory contents without being told to.
+- The `gtk-*`/`.gtkrc-2.0` files were never home-manager-managed at all —
+  some GTK app (waybar, swaync, nm-applet) auto-created default settings
+  files there before `gtk.enable` existed in this config.
+
+Rather than keep manually `rm`-ing one newly-discovered path per rebuild
+attempt, set `home-manager.backupFileExtension = "backup"` in `flake.nix`
+(home-manager's own error message suggests this) — pre-existing
+unmanaged files at a path home-manager wants now get renamed with a
+`.backup` suffix instead of blocking activation. Should make this whole
+class of error a non-issue going forward, including for any future
+restructuring like this one.
