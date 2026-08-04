@@ -7,38 +7,9 @@ local act = wezterm.action
 -- so nothing extra is needed there.
 local config = {}
 
--- Custom warm-light theme, generated from 'mini.hues' in the Neovim config.
--- Palette source of truth: ~/.config/palette.json (chezmoi-managed).
-config.colors = {
-	foreground = "#2e2a22",
-	background = "#ece4d8",
-	cursor_bg = "#2e2a22",
-	cursor_border = "#2e2a22",
-	cursor_fg = "#ece4d8",
-	selection_bg = "#cac3b7",
-	selection_fg = "#2e2a22",
-
-	ansi = {
-		"#0f0b05", -- black
-		"#6d0022", -- red
-		"#005f24", -- green
-		"#6f6600", -- yellow
-		"#290774", -- blue
-		"#570056", -- purple (ANSI magenta slot)
-		"#008180", -- cyan
-		"#a9a196", -- white
-	},
-	brights = {
-		"#6f6d69", -- bright black
-		"#994c64", -- bright red
-		"#4c8f66", -- bright green
-		"#9a944c", -- bright yellow
-		"#69519e", -- bright blue
-		"#894c89", -- bright purple
-		"#4ca7a6", -- bright cyan
-		"#d4d0ca", -- bright white
-	},
-}
+-- WezTerm bundles Catppuccin natively -- no plugin or config.colors table
+-- needed, just point at the built-in scheme name.
+config.color_scheme = "Catppuccin Latte"
 config.font = wezterm.font("Iosevka Nerd Font")
 config.font_size = 16.0
 config.window_decorations = "RESIZE"

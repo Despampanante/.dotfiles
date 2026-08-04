@@ -495,3 +495,30 @@ Since this rebuild changes the bar's height/margins anyway, worth checking
 whether the issue is still there afterward before digging further — if it
 persists, need to know which compositor (sway/niri) and whether it's
 consistent or one-off.
+
+## WezTerm and Neovim moved to Catppuccin Latte too
+
+Last of the warm-light holdouts. Both turned out much simpler than the
+desktop-chrome work:
+
+- **WezTerm bundles Catppuccin as a built-in color scheme** — no plugin, no
+  Nix changes, just `config.color_scheme = "Catppuccin Latte"` replacing the
+  whole hand-written `config.colors` table.
+- **Neovim already had `catppuccin/nvim` installed** via `vim.pack.add` in
+  `40_plugins.lua`, with a commented-out `-- vim.cmd('color catppuccin-latte')`
+  showing exactly how to turn it on — this config (built on mini.nvim /
+  `vim.pack`, a "MiniMax"-style starter) ships several colorschemes
+  pre-installed but inactive, catppuccin among them. Disabled the custom
+  `mini.hues` warm-light setup in `30_mini.lua` (commented out, not
+  deleted — easy revert) and enabled catppuccin properly with
+  `integrations.mini = true`, since this whole config's UI (statusline,
+  tabline, starter, pick) is mini.nvim modules that need that integration
+  to actually get themed, not just syntax highlighting.
+
+**Not synced to `windows/`**: `nvim` and `wezterm.lua` are both duplicated
+into the Windows dotfiles side (unlike the Linux-only desktop chrome), and
+per your "ignore Windows for now" call this pass only touched the `nixos/`
+copies. The Windows copies are still warm-light — new drift between the two
+sides, on top of the pre-existing duplication. Revisit whenever you want
+Windows themed to match, or decide to finally wire up the shared-file
+mechanism mentioned in the repo README instead of copies.

@@ -41,16 +41,18 @@ local now, now_if_args, later = Config.now, Config.now_if_args, Config.later
 -- now(function() vim.cmd('colorscheme miniautumn') end)
 -- now(function() vim.cmd('colorscheme randomhue') end)
 
--- Custom 'mini.hues' scheme: same warm bg/fg anchors as 'minisummer' (light),
--- but with saturation pushed up for more vivid highlight colors.
-now(function()
-  require('mini.hues').setup({
-    background = '#ece4d8',
-    foreground = '#2e2a22',
-    n_hues = 8,
-    saturation = 'high',
-  })
-end)
+-- Was a custom 'mini.hues' warm-light scheme here (bg #ece4d8 / fg #2e2a22,
+-- high saturation). Replaced with Catppuccin Latte, set up in
+-- 'plugin/40_plugins.lua' alongside where the plugin itself is installed.
+-- Kept for reference / easy revert:
+-- now(function()
+--   require('mini.hues').setup({
+--     background = '#ece4d8',
+--     foreground = '#2e2a22',
+--     n_hues = 8,
+--     saturation = 'high',
+--   })
+-- end)
 
 -- Common configuration presets. Example usage:
 -- - `<C-s>` in Insert mode - save and go to Normal mode

@@ -231,6 +231,17 @@ Config.now(function()
    "https://github.com/rose-pine/neovim",
  })
 
-  -- Enable only one
-  -- vim.cmd('color catppuccin-latte')
+  -- Enable only one. Catppuccin Latte -- matches the rest of the desktop
+  -- (waybar/swaync/fuzzel/sway/niri/wezterm all moved to it too, see
+  -- DECISIONS.md). `mini = true` themes the mini.nvim modules this config
+  -- is built on (statusline, tabline, pick, starter, etc.), not just syntax.
+  require('catppuccin').setup({
+    flavour = 'latte',
+    integrations = {
+      mini = true,
+      native_lsp = { enabled = true },
+      treesitter = true,
+    },
+  })
+  vim.cmd('color catppuccin')
 end)
