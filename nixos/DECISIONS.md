@@ -975,3 +975,18 @@ would mean redoing it. Verified live: built, confirmed the generated
 and ran `direnv allow` + `direnv export bash` -- both landed on `PATH`
 purely from being in that directory, confirming the mechanism works
 end-to-end.
+
+## nrs/nrb aliases: hardcoded host name -> $(hostname)
+
+Came up while walking through the eventual laptop migration: `nrs`/`nrb`
+were hardcoded to `--flake ~/dotfiles/nixos#vm`, so they'd silently apply
+the *wrong* host's config if run as-is on a `laptop` nixosConfigurations
+entry (still building `vm`, not erroring, just not what you'd want).
+Switched both to `--flake ~/dotfiles/nixos#$(hostname)` -- plain Nix
+string, no `${}` interpolation, so `$(hostname)` passes through literally
+into the generated `.zshrc` and zsh expands it at alias-*invocation*
+time, not once at build time. Verified by inspecting the built `.zshrc`
+(literal `$(hostname)` present, not pre-baked to `vm`) and by expanding
+the same alias text directly in `zsh -c` -- resolves to `vm` here,
+resolves to `laptop` automatically once `networking.hostName = "laptop"`
+and a matching `nixosConfigurations.laptop` exist.

@@ -31,8 +31,11 @@
       ll = "ls -la";
       la = "ls -A";
       gs = "git status";
-      nrs = "sudo nixos-rebuild switch --flake ~/dotfiles/nixos#vm";
-      nrb = "sudo nixos-rebuild build --flake ~/dotfiles/nixos#vm";
+      # $(hostname) rather than a hardcoded host name so these work
+      # unchanged on any host this config is deployed to (vm, laptop, ...)
+      # -- see DECISIONS.md.
+      nrs = "sudo nixos-rebuild switch --flake ~/dotfiles/nixos#$(hostname)";
+      nrb = "sudo nixos-rebuild build --flake ~/dotfiles/nixos#$(hostname)";
     };
   };
 
