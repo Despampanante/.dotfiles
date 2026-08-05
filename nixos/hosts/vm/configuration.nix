@@ -64,6 +64,16 @@
     sddm.enable = true;
   };
 
+  # Steam gets the dedicated NixOS module rather than just the package --
+  # it also pulls in 32-bit graphics libs and (with these two flags) opens
+  # firewall ports for Remote Play and Local Network Game Transfers, which
+  # a plain `pkgs.steam` in environment.systemPackages wouldn't set up.
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = true;
+    localNetworkGameTransfers.openFirewall = true;
+  };
+
   programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true;
@@ -115,6 +125,13 @@
   programs.zsh.enable = true;
 
   programs.firefox.enable = true;
+
+  # Needed for google-chrome/discord/obsidian/spotify below and Steam
+  # above. A predicate limited to just those package names would be more
+  # precise, but Steam alone pulls in several differently-named unfree
+  # derivations under the hood (steam-unwrapped, steam-run, etc.) that
+  # shift between nixpkgs versions -- not worth the whack-a-mole for a
+  # system that's going to run this much closed-source software anyway.
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
@@ -167,6 +184,13 @@
     polkit_gnome
     wl-clipboard
     libnotify
+
+    # Regular apps. Steam is separate (programs.steam above) since it
+    # needs more than just the package.
+    google-chrome
+    discord
+    obsidian
+    spotify
   ];
 
   system.stateVersion = "25.05";

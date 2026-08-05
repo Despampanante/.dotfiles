@@ -823,3 +823,22 @@ Verified live: launched `pavucontrol` (a real GTK3 app) on the VM with the
 new generation and screenshotted it -- light background, peach accent on
 the selected-output indicator, matching the rest of the desktop instead of
 default Adwaita.
+
+## Added Chrome, Discord, Obsidian, Spotify, Steam
+
+All proprietary, so this needed `nixpkgs.config.allowUnfree = true`
+-- already set (undocumented until now) for something earlier in the
+project, reused rather than duplicated once noticed. Went with the blanket
+flag over an `allowUnfreePredicate` scoped to just these package names:
+more precise in theory, but Steam alone pulls in several differently-named
+unfree derivations under the hood (`steam-unwrapped`, `steam-run`, etc.)
+that shift between nixpkgs versions, and this system is going to run this
+much closed-source software anyway.
+
+Steam got the dedicated `programs.steam` module rather than just
+`pkgs.steam` in `environment.systemPackages` -- it also pulls in 32-bit
+graphics libs and, with `remotePlay.openFirewall`/
+`localNetworkGameTransfers.openFirewall`, opens the firewall ports those
+features need, which the bare package alone wouldn't set up. The other
+four (`google-chrome`, `discord`, `obsidian`, `spotify`) are plain
+packages, no special module needed.
