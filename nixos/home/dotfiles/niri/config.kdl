@@ -39,18 +39,6 @@ layout {
     }
 }
 
-// This VM has no 3D acceleration (VirtualBox falls back to a software/
-// llvmpipe-ish render path -- see "No 3D enabled" / "software EGL
-// renderers are skipped" in `journalctl --user -u niri`), which shows up
-// as a black flash mid-animation when sliding between workspaces. Turning
-// off just that one animation (not all of them) avoids the glitch; revisit
-// once this config runs on real GPU hardware (the laptop migration).
-animations {
-    workspace-switch {
-        off
-    }
-}
-
 prefer-no-csd
 
 spawn-at-startup "swaybg" "-c" "#eff1f5"

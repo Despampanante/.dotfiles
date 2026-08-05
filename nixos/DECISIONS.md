@@ -613,6 +613,11 @@ GPU path). Confirmed via niri's own animations wiki page that individual
 animations can be disabled without turning off animations globally
 (`animations { workspace-switch { off } }`), so only that one transition
 was disabled — window open/close, resizing, etc. keep animating. This is
-a VM-graphics limitation, not a real bug in the config; worth revisiting
-once this setup runs on the actual laptop hardware (real GPU) where the
-animation likely won't glitch at all.
+a VM-graphics limitation, not a real bug in the config.
+
+**Reverted**: you decided it's not worth working around — you're moving to
+real hardware (the laptop migration) soon anyway, where a real GPU should
+render this fine. Removed the `animations` block entirely rather than
+leave a disabled workaround sitting in the config; re-add
+`workspace-switch { off }` if the glitch turns out to follow you to the
+laptop.
