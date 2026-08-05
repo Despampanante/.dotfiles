@@ -19,6 +19,11 @@
       name = "Santi";
       email = "santiago.depascale@gmail.com";
     };
+    # Lets `git push`/`pull` over HTTPS use `gh`'s stored auth instead of
+    # failing with "could not read Username" -- ~/.config/git/config is
+    # home-manager-managed (read-only), so `gh auth setup-git` can't write
+    # to it directly; setting this here is the equivalent for this repo.
+    settings.credential.helper = "!gh auth git-credential";
   };
 
   programs.zsh = {
