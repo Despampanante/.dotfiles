@@ -55,15 +55,22 @@ prefer-no-csd
 // converted from the old positional binds below, purely so every digit
 // addresses a workspace by name instead of a mix of both -- keeps them
 // immune to the position-drift problem this whole block exists to avoid.
-workspace "1"
-workspace "2"
-workspace "3"
-workspace "4"
-workspace "5"
-workspace "7"
-workspace "8"
-workspace "9"
+//
+// Declared in reverse (0 first, 1 last): niri inserts each new named
+// workspace at the *front* of the stack, not the end, confirmed live via
+// `niri msg workspaces` -- declaring in ascending order put "1" at the
+// last position and "0" at the first, the opposite of what the on-screen
+// order should read as. This order is what actually produces position 1
+// = "1" ... position 9 = "0" on screen.
 workspace "0"
+workspace "9"
+workspace "8"
+workspace "7"
+workspace "5"
+workspace "4"
+workspace "3"
+workspace "2"
+workspace "1"
 
 // Pins each app to its workspace regardless of how the window was
 // created -- covers both the spawn-at-startup launches below and any
