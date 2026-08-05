@@ -48,6 +48,22 @@
   services.displayManager.sddm.enable = true;
   services.displayManager.sddm.wayland.enable = true;
 
+  # System-level catppuccin.nix (separate from the home-manager one in
+  # home/santi.nix -- SDDM runs pre-login, outside any user session, so it
+  # needs the NixOS module instead). Matches the desktop's Catppuccin Latte
+  # theming everywhere else -- see DECISIONS.md.
+  catppuccin = {
+    enable = true;
+    # Same reasoning as home/santi.nix's autoEnable=false: without it, this
+    # silently themes *every* catppuccin-supported NixOS module (caught
+    # GRUB getting auto-themed on the first build here, unasked-for) --
+    # opt in per-module instead.
+    autoEnable = false;
+    flavor = "latte";
+    accent = "peach";
+    sddm.enable = true;
+  };
+
   programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true;

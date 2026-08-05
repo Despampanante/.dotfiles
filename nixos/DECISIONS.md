@@ -698,3 +698,32 @@ with `-b 5` (one row) baked into both invocation points.
 Verified all of this live on the VM (real `wob`/`wlogout` binaries, real
 generated config, actual screenshots) before committing, same as the
 waybar-crash investigation earlier.
+
+## Themed SDDM with catppuccin/nix's actual NixOS module
+
+Unlike everything else so far, SDDM runs pre-login, outside any user
+session -- theming it needed `catppuccin.nixosModules.catppuccin` (the
+system-level module, added to `flake.nix`'s module list) and system-level
+`catppuccin.*` options in `hosts/vm/configuration.nix`, separate from the
+home-manager-level `catppuccin.*` block already in `home/santi.nix` (same
+option names, different scope -- home-manager's doesn't reach anything
+that runs before a user logs in). `catppuccin.sddm.enable = true` pulls in
+the actual QML theme package and points `services.displayManager.sddm.theme`
+at it.
+
+**First build caught GRUB getting auto-themed too** -- unasked for. Root
+cause: NixOS-level `catppuccin.autoEnable` defaults to whatever
+`catppuccin.enable` is (`true`), which silently enables *every*
+catppuccin-supported NixOS module, not just the one requested. This is the
+exact same footgun `autoEnable = false` was already added for at the
+home-manager level earlier in this project -- missed doing the same thing
+system-side until the build showed a `catppuccin-grub` derivation being
+built. Set `catppuccin.autoEnable = false` here too; confirmed the
+rebuild no longer touches GRUB at all (dropped out of the build plan
+entirely) while `services.displayManager.sddm.theme` still correctly
+evaluates to `catppuccin-latte-peach`.
+
+The module also asserts `services.displayManager.sddm.package` is the Qt6
+build (`pkgs.kdePackages.sddm`) -- didn't need to set this explicitly,
+this nixpkgs channel already defaults to it, confirmed by the assertion
+not firing.
