@@ -46,11 +46,20 @@ layout {
 
 prefer-no-csd
 
-spawn-at-startup "swaybg" "-c" "#eff1f5"
+// Procedurally generated Catppuccin Latte gradient (see
+// dotfiles/wallpaper/generate.sh) — falls back to a flat fill (same
+// "solid bg" approach as the Windows wallpaper) if this ever needs
+// reverting: spawn-at-startup "swaybg" "-c" "#eff1f5"
+spawn-at-startup "swaybg" "-i" "/home/santi/.local/share/wallpaper/catppuccin-latte.png" "-m" "fill"
 spawn-at-startup "waybar" "-c" "/home/santi/.config/waybar/config-niri" "-s" "/home/santi/.config/waybar/style.css"
 spawn-at-startup "swaync"
 spawn-at-startup "nm-applet" "--indicator"
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+
+// Night light -- wlroots' own gamma-control protocol, same as sway's copy
+// of this in config.d/autostart. No location configured, so it runs on a
+// fixed clock instead of real sunrise/sunset -- see DECISIONS.md.
+spawn-at-startup "wlsunset" "-S" "07:00" "-s" "19:30" "-t" "3500" "-T" "6500"
 
 // Idle lock -- sway has had this via swayidle in config.d/keybindings all
 // along; niri never got the equivalent, so the session just stayed

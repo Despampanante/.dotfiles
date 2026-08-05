@@ -175,6 +175,7 @@
     swaylock
     swayidle
     swaybg
+    wlsunset
     grim
     slurp
     playerctl

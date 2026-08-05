@@ -83,6 +83,13 @@
     executable = true;
   };
 
+  # Procedurally generated (see dotfiles/wallpaper/generate.sh) rather than
+  # downloaded, so it stays on-palette and has no license to track. Solid
+  # color (`swaybg -c "#eff1f5"`) is the documented fallback in the sway/
+  # niri configs if this ever needs reverting quickly.
+  home.file.".local/share/wallpaper/catppuccin-latte.png".source =
+    ./dotfiles/wallpaper/catppuccin-latte.png;
+
   imports = [ ./waybar.nix ./wlogout.nix ];
 
   # fuzzel and swaylock moved to the real home-manager modules (from plain

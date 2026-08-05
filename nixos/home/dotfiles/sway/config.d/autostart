@@ -3,6 +3,12 @@ exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 exec swaync
 exec nm-applet --indicator
 
+# Night light -- wlroots' own gamma-control protocol (wlr-gamma-control-
+# unstable-v1), no location configured so it runs on a fixed clock instead
+# of real sunrise/sunset; see DECISIONS.md if that's worth swapping for
+# -l/-L once this moves to the laptop and a real location is known.
+exec wlsunset -S 07:00 -s 19:30 -t 3500 -T 6500
+
 # wob overlay bar, reading off a hand-made FIFO -- no systemd session
 # integration is set up here (nothing else in this config is
 # systemd-activated either), see home/santi.nix's services.wob comment.

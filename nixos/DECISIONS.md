@@ -886,3 +886,43 @@ at all. Added `{icon}` back into both format strings in `home/waybar.nix`.
 Verified live: rebuilt, pointed a throwaway waybar instance directly at
 the newly-built `waybar-config-niri.json` from the nix store, and
 screenshotted the bar -- battery icon now renders next to the percentage.
+
+## Wallpaper: procedurally generated instead of downloaded, flat kept as fallback
+
+Wanted a Catppuccin Latte-toned wallpaper instead of the flat `#eff1f5`
+fill, but didn't want to pull an arbitrary image off the internet -- no
+license to track, no risk of it clashing with the palette. Generated one
+instead: `dotfiles/wallpaper/generate.sh` (needs imagemagick, run by hand,
+not part of the Nix build) draws a latte base/mantle gradient with two
+soft radial glows in the same peach/mauve accents already used for the
+active-window border, GTK theme, and starship prompt. Output
+(`catppuccin-latte.png`) is checked in and copied into
+`~/.local/share/wallpaper/` via `home.file` in `home/santi.nix`, since
+it's a single generated asset rather than a live-edited dotfile.
+
+Both sway (`config.d/theme`) and niri (`config.kdl`) now point `swaybg -i`
+at that file with `-m fill`. The original flat-color commands are kept
+right above each, commented out, as an explicit one-line revert if the
+image approach ever needs backing out. Verified live: rebuilt, restarted
+swaybg pointed at the generated file, switched to an empty workspace, and
+screenshotted -- gradient renders correctly full-screen.
+
+## Night light: wlsunset, fixed schedule (no location configured yet)
+
+Wanted the display to warm up at night. `wlsunset` is the wlroots-native
+answer (uses `wlr-gamma-control-unstable-v1`, so it works under both sway
+and niri with no compositor-specific glue) -- redshift/gammastep are
+X11-first and need extra shims under Wayland. Added `pkgs.wlsunset` to
+`environment.systemPackages` (shared list, same as swaylock/swayidle/etc)
+and spawn it at startup from both compositors: sway's `config.d/autostart`
+and niri's `config.kdl`.
+
+No real latitude/longitude is configured (this is still a VM, and location
+wasn't given), so it runs on a fixed clock (`-S 07:00 -s 19:30`) instead
+of `-l/-L` solar calculation -- fine for now, worth revisiting with the
+laptop's real location once that migration happens. Temperatures are
+`-t 3500 -T 6500` (a bit warmer at night than wlsunset's own 4000 K
+default, since warmer-at-night was the explicit ask). Verified live: ran
+the built binary directly (`timeout 3 wlsunset ...`), confirmed it found
+the output, calculated the sunrise/sunset trajectory, and set 6500 K
+(correct for the time of day it ran at) with no protocol errors.
