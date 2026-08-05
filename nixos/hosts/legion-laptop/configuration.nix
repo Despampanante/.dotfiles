@@ -62,6 +62,18 @@
     sddm.enable = true;
   };
 
+  # SDDM's greeter has no cursor at all without this -- catppuccin.cursors
+  # in home/santi.nix only applies inside the logged-in user's session (via
+  # home-manager), which SDDM runs entirely outside of, same split as the
+  # GTK/SDDM theming above. XCURSOR_THEME here has to match the folder name
+  # home-manager's pointerCursor resolves to (confirmed by building
+  # catppuccin-cursors.lattePeach and checking share/icons/ directly, same
+  # as how the GTK theme name was confirmed rather than guessed).
+  environment.variables = {
+    XCURSOR_THEME = "catppuccin-latte-peach-cursors";
+    XCURSOR_SIZE = "32";
+  };
+
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true;
@@ -169,6 +181,9 @@
     xwayland-satellite # niri's Xwayland bridge -- see niri/config.kdl's
                         # spawn-at-startup. Not needed for sway, which has
                         # Xwayland support built in via wlroots.
+    catppuccin-cursors.lattePeach # so XCURSOR_THEME above actually
+                                   # resolves to something on the system
+                                   # (not just home-manager's) XDG data dirs
 
     google-chrome
     discord

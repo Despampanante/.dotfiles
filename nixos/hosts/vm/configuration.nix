@@ -64,6 +64,15 @@
     sddm.enable = true;
   };
 
+  # SDDM's greeter has no cursor at all without this -- catppuccin.cursors
+  # in home/santi.nix only applies inside the logged-in user's session, same
+  # split as the GTK/SDDM theming above. Value confirmed by building
+  # catppuccin-cursors.lattePeach and checking share/icons/ directly.
+  environment.variables = {
+    XCURSOR_THEME = "catppuccin-latte-peach-cursors";
+    XCURSOR_SIZE = "32";
+  };
+
   # Steam gets the dedicated NixOS module rather than just the package --
   # it also pulls in 32-bit graphics libs and (with these two flags) opens
   # firewall ports for Remote Play and Local Network Game Transfers, which
@@ -188,6 +197,9 @@
     xwayland-satellite # niri's Xwayland bridge -- see niri/config.kdl's
                         # spawn-at-startup. Not needed for sway, which has
                         # Xwayland support built in via wlroots.
+    catppuccin-cursors.lattePeach # so XCURSOR_THEME above actually
+                                   # resolves to something on the system
+                                   # (not just home-manager's) XDG data dirs
 
     # Regular apps. Steam is separate (programs.steam above) since it
     # needs more than just the package.
