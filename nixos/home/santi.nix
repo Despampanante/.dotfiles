@@ -102,11 +102,13 @@
         # "Iosevka Nerd Font" (no suffix) is Iosevka's default
         # quasi-proportional build -- WezTerm forces it into a monospace
         # terminal grid so it reads as fixed-width there, but fuzzel
-        # renders it as a normal text label using its natural (slightly
-        # variable-width) spacing, which looked visually different from
-        # the terminal. "Mono" is the actual fixed-width cut -- see
-        # DECISIONS.md.
-        font = "Iosevka Nerd Font Mono:size=11";
+        # renders it as a normal text label using its own metrics, which
+        # looked visually different from the terminal. "Mono" is the
+        # actual fixed-width cut -- see DECISIONS.md. Size matched to
+        # WezTerm's font_size (16) too -- fuzzel was still on its
+        # original size=11, small enough next to the terminal's 16 that
+        # the *same* monospace font read as a different one at a glance.
+        font = "Iosevka Nerd Font Mono:size=16";
         prompt = "❯";
         icon-theme = "Adwaita";
         terminal = "wezterm";
