@@ -36,6 +36,17 @@
     };
   };
 
+  # Per-project dev environments (e.g. a C++ project's flake.nix pulling in
+  # Eigen/Boost/fmt/Catch2/ninja) rather than piling project-specific
+  # libraries into system.systemPackages -- see DECISIONS.md. nix-direnv
+  # adds a build-output cache on top of plain direnv, so `nix develop`'s
+  # shell doesn't get fully re-evaluated on every `cd`. enableZshIntegration
+  # defaults to true, hooking into programs.zsh above automatically.
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+  };
+
   # Prompt. Colors reference catppuccin/nix's generated palette (peach/mauve/
   # red/green — see DECISIONS.md), merged in via catppuccin.starship below.
   # enableZshIntegration defaults to true, so this hooks into programs.zsh

@@ -926,3 +926,52 @@ default, since warmer-at-night was the explicit ask). Verified live: ran
 the built binary directly (`timeout 3 wlsunset ...`), confirmed it found
 the output, calculated the sunrise/sunset trajectory, and set 6500 K
 (correct for the time of day it ran at) with no protocol errors.
+
+## Fuzzel's menu font "looked different" from the terminal -- it wasn't the font
+
+Asked whether fuzzel's list font actually matched WezTerm's, since it
+looked different side by side. First hypothesis (given the *exact* same
+bug shape as the earlier "Fuzzel's font looked different" entry above)
+was that fuzzel had fallen back off `Iosevka Nerd Font Mono` again --
+disproven this time: `strace`'d fuzzel and confirmed it opens
+`IosevkaNerdFontMono-Regular.ttf` directly, and a `fontTools` dump of that
+file's `hmtx` table showed every glyph (`i`, `M`, `l`, `W`, space, `.`)
+at exactly 500 units advance width -- genuinely uniform monospace, not a
+mismatched font.
+
+Re-tested by rendering `"iiiiiiiiii MMMMMMMMMM"` in fuzzel and measuring
+actual pixel columns (not eyeballing) -- both runs advance exactly 16px
+per character. The "different font" impression was an optical illusion:
+`M`'s thick strokes fill most of a 16px cell while `i`'s thin stroke
+leaves mostly whitespace in the same-width cell, which reads as uneven
+spacing even though it isn't. The real cause was simpler -- fuzzel was
+still at its original `size=11` while WezTerm runs `font_size=16`; at
+that size gap, hinting alone makes the *same* font look like a different
+one next to a much larger rendering of it. Bumped fuzzel to `size=16` to
+match. Verified live: rebuilt, launched fuzzel with the new
+`fuzzel.ini`, screenshotted -- reads as the same weight/size as the
+terminal now.
+
+## direnv/nix-direnv for per-project C++ dev environments
+
+Wanted Eigen/Boost/fmt/Catch2/ninja for upcoming C++ practice (quant dev,
+LeetCode) but didn't want them in `environment.systemPackages` --
+project-specific libraries belong to a project's own `flake.nix`, not the
+system closure, so different projects can pin different versions and the
+setup travels with the repo instead of living only on this machine.
+`programs.direnv` (`nix-direnv.enable = true` for a build-output cache on
+top of plain direnv, so `nix develop` isn't fully re-evaluated on every
+`cd`) is the piece that makes that ergonomic -- auto-loads a project's
+shell on `cd`, unloads on leaving. `enableZshIntegration` defaults to
+true, so it hooks into `programs.zsh` automatically, no separate wiring
+needed.
+
+Deliberately did *not* scaffold an actual template project/flake.nix
+here -- this is still the VM, project directories aren't git-tracked
+anywhere in this repo, and doing that work before the laptop migration
+would mean redoing it. Verified live: built, confirmed the generated
+`.zshrc` has the `direnv hook zsh` line, then hand-built a throwaway
+`flake.nix`+`.envrc` in `/tmp` with `eigen` and `cowsay` as `buildInputs`
+and ran `direnv allow` + `direnv export bash` -- both landed on `PATH`
+purely from being in that directory, confirming the mechanism works
+end-to-end.
