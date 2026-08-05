@@ -12,7 +12,10 @@ local config = {}
 config.color_scheme = "Catppuccin Latte"
 config.font = wezterm.font("Iosevka Nerd Font")
 config.font_size = 16.0
-config.window_decorations = "RESIZE"
+-- niri has prefer-no-csd set and no server-side decorations at all, so
+-- "RESIZE" was actually WezTerm drawing its own thin resize-border chrome
+-- (the odd-colored strip along the top) -- just drop decorations entirely.
+config.window_decorations = "NONE"
 
 -- tmux (via the leader keybinds below) does the multiplexing day to day, so
 -- the native tab strip is redundant screen space rather than themed — just

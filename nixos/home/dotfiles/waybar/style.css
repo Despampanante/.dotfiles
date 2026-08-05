@@ -95,8 +95,9 @@ window#waybar {
 
 /* -- right: two grouped pills (status, system) ------------------------------ */
 /* Waybar names "group/status" -> CSS id "#status" (the "group/" prefix is
- * stripped, not turned into a hyphen like custom/* modules) -- #group-status
- * silently matched nothing, which is why this never had a background. */
+ * stripped, not turned into a hyphen the way custom-prefixed modules are)
+ * -- #group-status silently matched nothing, which is why this never had
+ * a background. */
 
 #status,
 #system {

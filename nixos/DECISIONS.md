@@ -522,3 +522,46 @@ copies. The Windows copies are still warm-light — new drift between the two
 sides, on top of the pre-existing duplication. Revisit whenever you want
 Windows themed to match, or decide to finally wire up the shared-file
 mechanism mentioned in the repo README instead of copies.
+
+## The "missing waybar" and "window border/sizing" issues were the same bug
+
+Turns out I had shell access to the VM itself this whole time (it's the
+environment these tool calls run in), so instead of guessing from a
+screenshot I ran `waybar -c ... -s ...` directly and got a real error:
+
+```
+[error] style.css:101:50'/*' in comment block
+```
+
+The right-side-pill comment added last round said "like `custom/*`
+modules" — that `/*` is a literal comment-open token sitting inside an
+already-open `/* ... */` block. C-style comments don't nest, and GTK's CSS
+parser treats a second `/*` inside a comment as a hard error rather than
+ignoring it: the whole stylesheet fails to load and waybar refuses to
+start. No process, no exclusive zone, nothing — this is also why the
+previously-reported "window border isn't quite around it" / "window goes
+past the bottom of the screen" issue was never actually a border or
+layer-shell bug: with waybar down, niri had no exclusive zone to reserve,
+so windows legitimately filled the entire output height. Confirmed live:
+launched waybar with the corrected stylesheet and the focused window's
+tile height shrank from 876px to 844px — exactly `height (26) + margin-top
+(6) = 32px`, matching the reserved zone precisely. One bug, two symptoms.
+Reworded the comment to avoid a literal `/*` substring instead of adding
+any parser workaround.
+
+**WezTerm titlebar**: the odd dark strip with an orange edge at the top of
+WezTerm windows wasn't a title bar in the traditional sense — niri has
+`prefer-no-csd` set and doesn't draw server-side decorations, so
+`config.window_decorations = "RESIZE"` was WezTerm drawing its own
+thin client-side resize-border chrome, uncolored by the Catppuccin change.
+Since you want it gone rather than themed, switched to
+`config.window_decorations = "NONE"`.
+
+Both fixes verified live on the VM (not just `nix build`): rebuilt the
+`home-manager` activation package, ran the actual generated `waybar`
+binary against the actual generated stylesheet, and screenshotted the
+result — floating pill bar renders correctly, correct colors, workspace
+icons visible, right-side pills backed correctly. The WezTerm decoration
+change needs a `home-manager`/`nixos-rebuild switch` to take effect (config
+symlink hasn't been swapped yet) — no restart needed after that, WezTerm
+watches its config file and reloads live.
