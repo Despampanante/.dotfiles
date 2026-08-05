@@ -103,10 +103,17 @@ now_if_args(function()
   -- Use `:h vim.lsp.enable()` to automatically enable language server based on
   -- the rules provided by 'nvim-lspconfig'.
   -- Use `:h vim.lsp.config()` or 'after/lsp/' directory to configure servers.
-  -- Uncomment and tweak the following `vim.lsp.enable()` call to enable servers.
-  -- vim.lsp.enable({
-  --   -- For example, if `lua-language-server` is installed, use `'lua_ls'` entry
-  -- })
+  --
+  -- Servers below are installed via Nix (hosts/vm/configuration.nix), not
+  -- mason.nvim -- see DECISIONS.md for why. Add an `after/lsp/<name>.lua`
+  -- file for any server-specific settings.
+  vim.lsp.enable({
+    'nixd', -- nix (this repo)
+    'lua_ls', -- lua (this neovim config)
+    'pyright', -- python
+    'clangd', -- c/c++
+    'bashls', -- bash (sway/niri/waybar scripts)
+  })
 end)
 
 -- Formatting =================================================================
@@ -186,7 +193,11 @@ later(function() add({ 'https://github.com/rafamadriz/friendly-snippets' }) end)
 -- Enable TCP LSP server). On Windows requires `ncat` on PATH for the TCP bridge.
 --
 -- Troubleshooting: run `:checkhealth godotdev`.
-now_if_args(function()
+--
+-- `later()` rather than `now_if_args()`: Godot projects are the exception,
+-- not the rule, so this shouldn't load/setup() on every file you open --
+-- just deferred past startup instead.
+later(function()
   add({ 'https://github.com/Mathijs-Bakker/godotdev.nvim' })
 
   require('godotdev').setup({

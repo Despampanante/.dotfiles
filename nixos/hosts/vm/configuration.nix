@@ -134,6 +134,21 @@
     gnumake
     gdb
 
+    # Language servers for neovim's vim.lsp.enable() (see
+    # nvim/plugin/40_plugins.lua) -- these are separate from the compilers
+    # above (an LSP talks LSP, a compiler doesn't). Nix-managed rather than
+    # through the mason.nvim already in the neovim config, since Mason
+    # downloads prebuilt binaries that expect standard FHS paths and tends
+    # to fight NixOS without extra glue (nix-ld) -- see DECISIONS.md.
+    nixd # nix (this repo)
+    lua-language-server # lua (the neovim config itself)
+    pyright # python
+    clang-tools # c/c++ -- also provides clangd
+    bash-language-server # bash (sway/niri/waybar scripts)
+    tree-sitter # CLI nvim-treesitter needs to build parsers it doesn't
+                # bundle (e.g. gdscript) -- was missing outright, so that
+                # install silently failed and retried on every nvim launch
+
     # Desktop pieces shared between the sway and niri sessions (not
     # sway-specific despite some package names — swaylock/swayidle/waybar
     # etc. work under any wlr-layer-shell-capable compositor).

@@ -727,3 +727,58 @@ The module also asserts `services.displayManager.sddm.package` is the Qt6
 build (`pkgs.kdePackages.sddm`) -- didn't need to set this explicitly,
 this nixpkgs channel already defaults to it, confirmed by the assertion
 not firing.
+
+## Neovim had no working LSPs, and a broken parser install retrying forever
+
+Asked to look into "missing dependencies." Ran `:checkhealth` first --
+came back mostly clean, which was the wrong signal to stop at. The real
+gap: `vim.lsp.enable(...)` in `40_plugins.lua` was fully commented out, so
+*no* language server was ever active regardless of what's installed, and
+`hosts/vm/configuration.nix`'s "Python + C++ dev tooling" only ever
+installed compilers/interpreters (`gcc`, `clang`, `python3`) -- an LSP is a
+separate binary that speaks the Language Server Protocol, not something a
+compiler provides.
+
+Asked whether to install servers via Nix or via the `mason.nvim` already
+sitting in the config unused -- picked Nix, consistent with everything
+else in this project. Mason downloads prebuilt binaries that expect
+standard FHS paths, a known source of friction on NixOS without `nix-ld`
+or similar. Added `nixd`, `lua-language-server`, `pyright`, `clang-tools`
+(provides `clangd`), and `bash-language-server` to
+`environment.systemPackages`, and uncommented+filled in `vim.lsp.enable()`
+with their `nvim-lspconfig` names (`nixd`, `lua_ls`, `pyright`, `clangd`,
+`bashls`). Verified all four testable ones actually attach, not just that
+the packages build: pointed a headless nvim at the real generated config
+(`XDG_CONFIG_HOME` -> the built home-manager generation's `nvim/`, real
+`$HOME` so already-installed `vim.pack` plugins get reused) with the new
+LSP binaries on `PATH`, opened a `.nix`/`.py`/`.sh`/`.lua` file each, and
+checked `vim.lsp.get_clients()` -- `nixd`/`pyright`/`bashls`/`lua_ls` all
+correctly attached to their respective filetypes.
+
+**Second, unrelated bug found via the same live test**: every single nvim
+launch was retrying and failing to build the `gdscript` tree-sitter
+parser --
+```
+error: Error during "tree-sitter build": ENOENT: no such file or directory (cmd): 'tree-sitter'
+```
+The `tree-sitter` CLI (needed to build parsers `nvim-treesitter` doesn't
+ship prebuilt, like `gdscript`) was never actually installed -- the
+config comments in `40_plugins.lua` already flagged this as a requirement
+("It requires third party software to build and install parsers"), it
+just was never fulfilled with an actual package. Added `pkgs.tree-sitter`;
+re-ran the same live test and got `[nvim-treesitter/install/gdscript]:
+Language installed` instead of the error.
+
+**Follow-up**: asked whether any of this should be made project-scoped
+rather than global, using `godotdev.nvim` (Godot support, rarely used) as
+the example. Two separate things were actually going on: the `gdscript`
+tree-sitter parser already only installs on-demand (first time you open a
+`.gd` file), so that part was effectively free already. The
+`godotdev.nvim` *plugin*, though, was wired to `now_if_args` -- which runs
+on *every* file opened via the CLI, Godot project or not -- so it was
+real always-on startup overhead for something used rarely. Switched it to
+`later()`, the same deferred-loading helper already used elsewhere in this
+file (e.g. `conform.nvim`, `friendly-snippets`) for exactly this purpose.
+Didn't go further into per-project `direnv`/flake devShells for this --
+that's a bigger architectural change than one plugin's load timing
+justifies right now.
