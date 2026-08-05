@@ -1066,3 +1066,39 @@ which driver is a real decision, not a default worth picking silently.
 **Also added while here**: `pkgs.claude-code` to `home.packages` in
 `home/santi.nix` (was only available via a temporary `nix-shell`, not
 persisted anywhere) -- applies to both hosts once either is switched to.
+
+## First real switch: Chrome profile lock, and another broken pulseaudio icon
+
+Two things reported broken right after the first `nrs` onto `legion-laptop`
+landed and the machine rebooted.
+
+**Chrome wouldn't open** -- `google-chrome` in a terminal showed the real
+error instead of just silently failing: "The profile appears to be in use
+by another Google Chrome process (4807) on another computer (legionlaptop)."
+Chrome's `SingletonLock` embeds the hostname it was created under
+(`~/.config/google-chrome/SingletonLock -> legionlaptop-4807`); after the
+`legionlaptop` -> `legion-laptop` rename, Chrome saw its own stale lock as
+belonging to a *different machine* and refused to touch it (can't safely
+assume PID reuse isn't a real remote host, e.g. over an NFS-mounted home).
+Confirmed no Chrome process was actually running (`pgrep chrome`, PID 4807
+long dead) and removed the three stale `Singleton{Lock,Socket,Cookie}`
+symlinks by hand -- Chrome recreates them itself on next launch. One-time
+cleanup, not a recurring issue unless the hostname changes again.
+
+**Waybar's pulseaudio icon was back to showing a broken glyph** -- this
+time a Pango fallback box with the literal hex `F7CA` printed inside it
+(confirmed live via `grim` + a cropped/upscaled screenshot, not guessed).
+`F7CA` is the `headphone` state's icon in `home/waybar.nix`'s
+`pulseaudio.format-icons` -- checked with `fontTools` against the actual
+installed `Iosevka Nerd Font` cmap and it's genuinely not in this build
+(same for `headset`'s `F7CD`), unlike `battery`/`backlight`/`default`'s
+codepoints which are all classic Font Awesome 4 (`F0xx`-`F2xx`) and
+present. `hands-free` and `format-muted` were *also* wrong -- not missing
+glyphs but literal corrupted characters (Hebrew `וֹ`, CJK `婢`) sitting
+where an icon should be, the same copy-paste-corruption failure mode as
+the "Waybar icon glyphs were empty strings" bug earlier in this file.
+Replaced all four with classic FA4 codepoints confirmed present in the
+font (`F025` headphones, `F095` phone/hands-free, `F026` volume-off for
+muted). Verified live: rebuilt, restarted the running `waybar` against the
+newly-built `config-niri.json`, screenshotted -- headphones icon renders
+correctly now.
