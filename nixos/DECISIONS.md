@@ -860,3 +860,15 @@ Mono:size=11"`. Verified live: rebuilt, launched fuzzel with the actual
 generated `fuzzel.ini`, and screenshotted it next to WezTerm's terminal
 text -- letterforms now visibly match (tight, consistent-width strokes)
 instead of the looser proportional spacing from before.
+
+## Caps Lock as an additional Ctrl -- niri never got sway's binding
+
+Sway has had `xkb_options caps:ctrl_modifier` in `config.d/input` all
+along (Caps Lock acts as an extra left-Ctrl while held, not a swap or
+toggle), but niri's `input { keyboard { xkb { } } }` block never set the
+equivalent -- another case of niri's config being a first draft that
+hadn't caught up to sway yet. Added `options "caps:ctrl_modifier"` inside
+niri's `xkb { }` block, same XKB option string sway uses (niri passes it
+straight through to libxkbcommon). Verified with `niri validate -c
+home/dotfiles/niri/config.kdl` and a full `nix build` of the vm system
+toplevel.

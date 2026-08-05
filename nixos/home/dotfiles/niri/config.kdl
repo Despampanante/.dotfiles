@@ -11,6 +11,11 @@ input {
     keyboard {
         xkb {
             layout "us"
+            // Sway already has this via caps:ctrl_modifier in
+            // config.d/input; niri never got the equivalent, so Caps Lock
+            // did nothing extra here. This makes it act as an additional
+            // left-Ctrl while held (not a swap/toggle).
+            options "caps:ctrl_modifier"
         }
     }
     touchpad {
