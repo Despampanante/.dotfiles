@@ -24,14 +24,18 @@ layout {
     center-focused-column "never"
     default-column-width { proportion 0.5; }
 
+    // `focus-ring` only wraps the focused window (its inactive-color is
+    // for a focused window on an unfocused monitor, not regular inactive
+    // windows) -- `border` is niri's actual per-window decoration with
+    // real active/inactive states, so that's what draws on every window.
     focus-ring {
-        width 2
-        active-color "#fe640b"
-        inactive-color "#acb0be"
+        off
     }
 
     border {
-        off
+        width 2
+        active-color "#fe640b"
+        inactive-color "#acb0be"
     }
 }
 

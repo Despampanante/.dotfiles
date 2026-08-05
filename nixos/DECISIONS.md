@@ -565,3 +565,19 @@ icons visible, right-side pills backed correctly. The WezTerm decoration
 change needs a `home-manager`/`nixos-rebuild switch` to take effect (config
 symlink hasn't been swapped yet) — no restart needed after that, WezTerm
 watches its config file and reloads live.
+
+## Niri inactive windows had no border at all
+
+Asked for a dull/neutral border on inactive windows. Niri's `focus-ring`
+block (which had `active-color`/`inactive-color` both set already) only
+ever wraps the *currently focused* window — its `inactive-color` is for a
+focused window sitting on an unfocused monitor, not for regular inactive
+windows on the same monitor. That's why inactive windows had no border
+even though `inactive-color` looked configured. Niri's actual per-window
+decoration for this is the separate `border` block, which was set to
+`off`. Swapped: disabled `focus-ring`, enabled `border` with the same
+active/inactive colors it had. Sway already did this correctly the whole
+time (`client.unfocused #bcc0cc` in `sway/config.d/theme`) — this gap was
+niri-only. Validated with `niri validate -c`; couldn't hot-test visually
+since `~/.config/niri` is a whole-directory store symlink (unlike waybar's
+per-file management), so this needs a rebuild to see live.
