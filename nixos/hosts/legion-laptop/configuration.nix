@@ -106,17 +106,54 @@
   # real reasons here (actual GPU driver setup) rather than working around
   # virtualized graphics.
   hardware.graphics.enable = true;
+  hardware.graphics.enable32Bit = true; # 32-bit Steam games need this too
 
   # NOT carrying over vm's WLR_NO_HARDWARE_CURSORS=1 -- that was a
   # VirtualBox-specific cursor-plane workaround (see DECISIONS.md). Re-add
   # if the real GPU turns out to have the same issue.
 
-  # Hybrid graphics: AMD Cezanne iGPU (amdgpu) + NVIDIA RTX 3060 Mobile
-  # dGPU, currently falling back to the open-source `nouveau` driver since
-  # nothing here selects the proprietary one. No hardware.nvidia.* / PRIME
-  # config added yet -- that's a real decision (offload vs. sync, which
-  # driver) worth making deliberately rather than defaulting silently; see
-  # DECISIONS.md.
+  # Hybrid graphics: AMD Cezanne iGPU (amdgpu, drives the internal panel --
+  # this is a muxless laptop, the NVIDIA GPU has no display wired to it at
+  # all) + NVIDIA RTX 3060 Mobile dGPU. Was falling back to the open-source
+  # `nouveau`/NVK stack (confirmed working -- GSP firmware loads, Vulkan
+  # via NVK enumerates the card fine -- but nothing selected it for actual
+  # use, and NVK's OpenGL path is weak on this GPU generation). Switched to
+  # the proprietary driver in PRIME offload mode (not sync -- sync needs a
+  # mux to drive the display from the dGPU, which this laptop doesn't
+  # have) for real gaming performance -- see DECISIONS.md.
+  #
+  # `open = true` uses NVIDIA's open-source *kernel* module (not the same
+  # thing as nouveau -- this still pulls in NVIDIA's proprietary userspace
+  # OpenGL/Vulkan/CUDA libraries). Officially supports Turing and later;
+  # this GA106 (Ampere) is well within that range, and NVIDIA has said the
+  # open modules are the recommended default for this generation going
+  # forward, not just a legacy-compat option.
+  #
+  # Bus IDs come straight from `lspci` (01:00.0 NVIDIA, 06:00.0 AMD),
+  # decimal-converted per NixOS's PCI:bus:slot:function format.
+  hardware.nvidia = {
+    modesetting.enable = true;
+    open = true;
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+
+    # Powers the dGPU down via ACPI when nothing's using offload -- battery
+    # life matters on a laptop, and this is the standard pairing with
+    # prime.offload (as opposed to leaving the dGPU powered all the time).
+    powerManagement.enable = true;
+    powerManagement.finegrained = true;
+
+    prime = {
+      offload.enable = true;
+      offload.enableOffloadCmd = true; # adds a `nvidia-offload` wrapper
+      amdgpuBusId = "PCI:6:0:0";
+      nvidiaBusId = "PCI:1:0:0";
+    };
+  };
+
+  # Still needed even under Wayland-only compositors (niri/sway) -- this is
+  # what wires up the proprietary driver's GLX/EGL libraries at all, which
+  # Xwayland (and anything using XWayland-satellite under niri) needs.
+  services.xserver.videoDrivers = [ "nvidia" ];
 
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
