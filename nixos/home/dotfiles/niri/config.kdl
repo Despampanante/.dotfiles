@@ -49,28 +49,35 @@ prefer-no-csd
 // Named/static workspaces -- unlike the plain numbered slots below (which
 // are fully dynamic and get garbage-collected when emptied, so what
 // "position 3" means can drift), a declared `workspace "name"` always
-// exists at a fixed spot even with no windows on it. Named after the
-// digits picked as easiest to reach on the keyboard (123 7890, skipping
-// the 456 row) so Mod+<digit> always lands on the same page. 4/5 also
-// converted from the old positional binds below, purely so every digit
-// addresses a workspace by name instead of a mix of both -- keeps them
-// immune to the position-drift problem this whole block exists to avoid.
+// exists at a fixed spot even with no windows on it. Named "w1".."w0"
+// rather than bare "1".."0": confirmed live (`niri msg action
+// focus-workspace "1"` then checking `niri msg workspaces`) that a plain
+// digit string is resolved as a *positional index*, not looked up by
+// name, regardless of any workspace actually named that -- so bare-digit
+// names silently defeated the entire point of this block (every bind
+// below was still following raw position, not the named workspace).
+// The "w" prefix makes the string unparseable as an index, forcing an
+// actual name lookup. Corresponds to the digits picked as easiest to
+// reach on the keyboard (123 7890, skipping the 456 row); 4/5 included
+// too so every digit in binds below addresses a workspace by name
+// consistently rather than a mix of named and positional.
 //
-// Declared in reverse (0 first, 1 last): niri inserts each new named
-// workspace at the *front* of the stack, not the end, confirmed live via
-// `niri msg workspaces` -- declaring in ascending order put "1" at the
-// last position and "0" at the first, the opposite of what the on-screen
-// order should read as. This order is what actually produces position 1
-// = "1" ... position 9 = "0" on screen.
-workspace "0"
-workspace "9"
-workspace "8"
-workspace "7"
-workspace "5"
-workspace "4"
-workspace "3"
-workspace "2"
-workspace "1"
+// On-screen left-to-right/top-to-bottom order is a separate question from
+// this list's declaration order -- unclear from testing tonight whether
+// it's driven by declaration order at all, since a prior attempt at
+// reordering this block produced no visible change on an already-running
+// session. Left in plain ascending order here; revisit the *display*
+// order (not the keybind correctness, which this fix covers) after a
+// full logout confirms whether it needs its own fix.
+workspace "w1"
+workspace "w2"
+workspace "w3"
+workspace "w4"
+workspace "w5"
+workspace "w7"
+workspace "w8"
+workspace "w9"
+workspace "w0"
 
 // Pins each app to its workspace regardless of how the window was
 // created -- covers both the spawn-at-startup launches below and any
@@ -79,19 +86,19 @@ workspace "1"
 // currently focused -- see DECISIONS.md.
 window-rule {
     match app-id=r#"^org\.wezfurlong\.wezterm$"#
-    open-on-workspace "1"
+    open-on-workspace "w1"
 }
 window-rule {
     match app-id="^google-chrome$"
-    open-on-workspace "2"
+    open-on-workspace "w2"
 }
 window-rule {
     match app-id="^discord$"
-    open-on-workspace "9"
+    open-on-workspace "w9"
 }
 window-rule {
     match app-id="^Spotify$"
-    open-on-workspace "0"
+    open-on-workspace "w0"
 }
 
 // Niri has no built-in Xwayland support (unlike sway, which gets it for
@@ -160,24 +167,24 @@ binds {
     // by name, not position, so they can't drift even as other, unnamed
     // dynamic workspaces get created/GC'd around them. 6 was never bound
     // (not in the "easiest to hit" set) and stays that way.
-    Mod+1 { focus-workspace "1"; }
-    Mod+2 { focus-workspace "2"; }
-    Mod+3 { focus-workspace "3"; }
-    Mod+4 { focus-workspace "4"; }
-    Mod+5 { focus-workspace "5"; }
-    Mod+7 { focus-workspace "7"; }
-    Mod+8 { focus-workspace "8"; }
-    Mod+9 { focus-workspace "9"; }
-    Mod+0 { focus-workspace "0"; }
-    Mod+Shift+1 { move-window-to-workspace "1"; }
-    Mod+Shift+2 { move-window-to-workspace "2"; }
-    Mod+Shift+3 { move-window-to-workspace "3"; }
-    Mod+Shift+4 { move-window-to-workspace "4"; }
-    Mod+Shift+5 { move-window-to-workspace "5"; }
-    Mod+Shift+7 { move-window-to-workspace "7"; }
-    Mod+Shift+8 { move-window-to-workspace "8"; }
-    Mod+Shift+9 { move-window-to-workspace "9"; }
-    Mod+Shift+0 { move-window-to-workspace "0"; }
+    Mod+1 { focus-workspace "w1"; }
+    Mod+2 { focus-workspace "w2"; }
+    Mod+3 { focus-workspace "w3"; }
+    Mod+4 { focus-workspace "w4"; }
+    Mod+5 { focus-workspace "w5"; }
+    Mod+7 { focus-workspace "w7"; }
+    Mod+8 { focus-workspace "w8"; }
+    Mod+9 { focus-workspace "w9"; }
+    Mod+0 { focus-workspace "w0"; }
+    Mod+Shift+1 { move-window-to-workspace "w1"; }
+    Mod+Shift+2 { move-window-to-workspace "w2"; }
+    Mod+Shift+3 { move-window-to-workspace "w3"; }
+    Mod+Shift+4 { move-window-to-workspace "w4"; }
+    Mod+Shift+5 { move-window-to-workspace "w5"; }
+    Mod+Shift+7 { move-window-to-workspace "w7"; }
+    Mod+Shift+8 { move-window-to-workspace "w8"; }
+    Mod+Shift+9 { move-window-to-workspace "w9"; }
+    Mod+Shift+0 { move-window-to-workspace "w0"; }
 
     // Still useful for any *further* overflow beyond the 9 named
     // workspaces above -- niri keeps exactly one empty dynamic workspace
