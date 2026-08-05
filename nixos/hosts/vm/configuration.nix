@@ -185,6 +185,9 @@
     polkit_gnome
     wl-clipboard
     libnotify
+    xwayland-satellite # niri's Xwayland bridge -- see niri/config.kdl's
+                        # spawn-at-startup. Not needed for sway, which has
+                        # Xwayland support built in via wlroots.
 
     # Regular apps. Steam is separate (programs.steam above) since it
     # needs more than just the package.

@@ -46,6 +46,12 @@ layout {
 
 prefer-no-csd
 
+// Niri has no built-in Xwayland support (unlike sway, which gets it for
+// free from wlroots) -- without this, X11-only apps just fail to open
+// under a niri session. xwayland-satellite bridges the gap; it sets
+// $DISPLAY itself once running, no extra env wiring needed here.
+spawn-at-startup "xwayland-satellite"
+
 // Procedurally generated Catppuccin Latte gradient (see
 // dotfiles/wallpaper/generate.sh) — falls back to a flat fill (same
 // "solid bg" approach as the Windows wallpaper) if this ever needs
