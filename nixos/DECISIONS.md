@@ -842,3 +842,21 @@ graphics libs and, with `remotePlay.openFirewall`/
 features need, which the bare package alone wouldn't set up. The other
 four (`google-chrome`, `discord`, `obsidian`, `spotify`) are plain
 packages, no special module needed.
+
+## Fuzzel's font looked different from WezTerm's despite the same config value
+
+Both configs say `"Iosevka Nerd Font"`, so this looked like it should
+already match. Root cause found via `fc-list`: that bare family name is
+Iosevka's default build, which is *quasi-proportional* (slightly variable
+character widths by design) -- there's a separate `"Iosevka Nerd Font
+Mono"` family installed too, the actual fixed-width cut. WezTerm forces
+whatever font it's given into a monospace terminal grid, so the
+quasi-proportional font still reads as fixed-width there; fuzzel renders
+text as a normal label using the font's natural spacing, so the same
+font's proportional side showed through and looked different. Not a config
+bug -- both were doing exactly what they were told, just in different
+rendering contexts. Switched fuzzel's `main.font` to `"Iosevka Nerd Font
+Mono:size=11"`. Verified live: rebuilt, launched fuzzel with the actual
+generated `fuzzel.ini`, and screenshotted it next to WezTerm's terminal
+text -- letterforms now visibly match (tight, consistent-width strokes)
+instead of the looser proportional spacing from before.
