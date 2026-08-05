@@ -621,3 +621,80 @@ render this fine. Removed the `animations` block entirely rather than
 leave a disabled workaround sitting in the config; re-add
 `workspace-switch { off }` if the glitch turns out to follow you to the
 laptop.
+
+## `Mod+4`/`Mod+5` did nothing — niri workspaces aren't sway's workspaces
+
+You only ever had 2 (then 3) workspaces and `Mod+4`/`Mod+5` were silent
+no-ops. Root cause: niri's workspaces are dynamic per-monitor, not a fixed
+numbered set like sway's. `focus-workspace <n>` (what `Mod+1..5` already
+used) only jumps to *whatever currently occupies* position n — it never
+creates one. Niri always keeps exactly one empty workspace at the end of
+the stack; the only way to grow past it is `focus-workspace-down`
+(scrolling past that last empty one), confirmed live via `niri msg action
+focus-workspace-down` actually creating workspace 3.
+
+Niri's own wiki explicitly recommends *against* emulating sway's static
+numbering (workspaces can still be dragged/reordered independent of any
+index, which it says gets "somewhat confusing") — asked you which model
+you wanted, you picked the native dynamic one. Added, matching niri's own
+default-config.kdl bindings:
+
+```
+Mod+Page_Down / Mod+Page_Up             -> focus-workspace-down / -up
+Mod+Shift+Page_Down / Mod+Shift+Page_Up -> move-window-to-workspace-down / -up
+```
+
+Left the existing `Mod+1..5` binds alone — they still work as "jump to
+whatever's in that slot," just don't create anything.
+
+## Added wob (volume/brightness OSD) and replaced power-menu.sh with wlogout
+
+Two aesthetic asks handled together since both touched the same
+XF86Audio*/XF86MonBrightness* binds.
+
+**wob**: no `catppuccin.nix` module for it, so `services.wob.settings` is
+hand-applied Catppuccin Latte hex (mantle background, surface2 border,
+peach bar, red for the `style.muted` variant). Set `services.wob.systemd
+= false` — this desktop has never set up systemd session integration for
+sway/niri (everything else here is spawned directly by the compositor,
+not systemd-activated), so wiring just this one service through
+`graphical-session.target` would silently never start it. Instead it's
+spawned the same way as everything else: a hand-made FIFO at
+`$XDG_RUNTIME_DIR/wob.sock`, piped through `tail -f | wob`, from each
+compositor's own startup block. Learned the hard way that with
+`systemd = false` the module *also* stops adding the `wob` package to
+`home.packages` (it's only referenced inside the systemd unit it isn't
+creating) — had to add it manually or the binary wouldn't exist on PATH
+at all.
+
+Replaced the old `$sink_volume`/`$volume_up`/`$volume_down`/`$volume_mute`/
+`$mic_mute` sway variables — they computed a value via `$(...)` and fed it
+to `exec`, which discards command output, so they were doing nothing
+(likely a leftover from a different, pre-waybar status-bar setup on
+`legacy`). New shared scripts (`home/dotfiles/scripts/wob-{volume,
+brightness}.sh`, symlinked to `~/.config/scripts/`, used by both
+compositors) actually change the value *and* report it to wob's FIFO,
+tagging the muted state so wob's red `style.muted` kicks in.
+
+**wlogout**: replaces `power-menu.sh` (the fuzzel-dmenu list) at both call
+sites — waybar's power button and sway's `Mod+Shift+E`. Deleted the old
+script outright (nothing referenced it anymore). New version uses
+`loginctl terminate-user $USER` for logout, which goes through
+systemd-logind rather than either compositor's own IPC — no more sway/niri
+branching like the old script needed. `programs.wlogout` (home-manager
+module, same shape as `programs.waybar`) generates the button layout as
+JSON and the style as CSS; icons point at nixpkgs' own bundled
+`${pkgs.wlogout}/share/wlogout/icons/*.png` (the same ones its default
+style.css references) rather than sourcing new assets. Styled circular
+pill buttons in Catppuccin Latte over a translucent scrim.
+
+Two CLI-flag mixups caught by actually running the binary rather than
+trusting the man page skim: `-c`/`-s` are `--column-spacing`/
+`--show-binds`, *not* `--layout`/`--css` (those are `-l`/`-C`) — first test
+silently rendered nixpkgs' own default dark layout instead of ours. And 5
+buttons in wlogout's default 3-per-row grid left an empty 6th cell, fixed
+with `-b 5` (one row) baked into both invocation points.
+
+Verified all of this live on the VM (real `wob`/`wlogout` binaries, real
+generated config, actual screenshots) before committing, same as the
+waybar-crash investigation earlier.

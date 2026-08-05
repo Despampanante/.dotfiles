@@ -47,6 +47,11 @@ spawn-at-startup "swaync"
 spawn-at-startup "nm-applet" "--indicator"
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 
+// wob has no systemd session integration set up here (nothing else in this
+// config is systemd-activated either), so it's spawned directly, reading
+// off a FIFO we create ourselves instead of wob's usual socket unit.
+spawn-sh-at-startup "mkfifo -m 600 \"$XDG_RUNTIME_DIR/wob.sock\" 2>/dev/null; tail -f \"$XDG_RUNTIME_DIR/wob.sock\" | wob"
+
 binds {
     Mod+Return { spawn "wezterm"; }
     Mod+D { spawn "fuzzel"; }
@@ -76,6 +81,17 @@ binds {
     Mod+Shift+4 { move-window-to-workspace 4; }
     Mod+Shift+5 { move-window-to-workspace 5; }
 
+    // `focus-workspace <n>` (above) only jumps to whatever already occupies
+    // that position -- it never creates one. Niri keeps exactly one empty
+    // workspace at the end of the per-monitor stack; scrolling past it with
+    // focus-workspace-down is what actually grows the list. This is the
+    // "native" way to get more than however many workspaces already exist,
+    // instead of a fixed count like sway's numbered workspaces.
+    Mod+Page_Down { focus-workspace-down; }
+    Mod+Page_Up { focus-workspace-up; }
+    Mod+Shift+Page_Down { move-window-to-workspace-down; }
+    Mod+Shift+Page_Up { move-window-to-workspace-up; }
+
     Mod+F { maximize-column; }
     Mod+Shift+F { fullscreen-window; }
     Mod+R { switch-preset-column-width; }
@@ -84,11 +100,11 @@ binds {
     Mod+Minus { set-column-width "-10%"; }
     Mod+Equal { set-column-width "+10%"; }
 
-    XF86AudioRaiseVolume allow-when-locked=true { spawn "pactl" "set-sink-volume" "@DEFAULT_SINK@" "+5%"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn "pactl" "set-sink-volume" "@DEFAULT_SINK@" "-5%"; }
-    XF86AudioMute allow-when-locked=true { spawn "pactl" "set-sink-mute" "@DEFAULT_SINK@" "toggle"; }
-    XF86MonBrightnessUp { spawn "brightnessctl" "-c" "backlight" "set" "+5%"; }
-    XF86MonBrightnessDown { spawn "brightnessctl" "-c" "backlight" "set" "5%-"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "/home/santi/.config/scripts/wob-volume.sh" "up"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "/home/santi/.config/scripts/wob-volume.sh" "down"; }
+    XF86AudioMute allow-when-locked=true { spawn "/home/santi/.config/scripts/wob-volume.sh" "mute"; }
+    XF86MonBrightnessUp { spawn "/home/santi/.config/scripts/wob-brightness.sh" "up"; }
+    XF86MonBrightnessDown { spawn "/home/santi/.config/scripts/wob-brightness.sh" "down"; }
 
     Print { screenshot; }
     Ctrl+Print { screenshot-screen; }

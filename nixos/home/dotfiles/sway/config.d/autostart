@@ -3,6 +3,11 @@ exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 exec swaync
 exec nm-applet --indicator
 
+# wob overlay bar, reading off a hand-made FIFO -- no systemd session
+# integration is set up here (nothing else in this config is
+# systemd-activated either), see home/santi.nix's services.wob comment.
+exec mkfifo -m 600 "$XDG_RUNTIME_DIR/wob.sock" 2>/dev/null; tail -f "$XDG_RUNTIME_DIR/wob.sock" | wob
+
 exec systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK
 exec hash dbus-update-activation-environment 2>/dev/null && \
      dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK

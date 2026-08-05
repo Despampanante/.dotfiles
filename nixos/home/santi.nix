@@ -74,6 +74,8 @@
     fzf # needed by tmux-sessionizer
     ripgrep
     tmux
+    wob # services.wob below only wires the package in when systemd=true;
+        # with systemd=false (see that block for why) it has to go here.
   ];
 
   home.file.".local/bin/tmux-sessionizer" = {
@@ -81,7 +83,7 @@
     executable = true;
   };
 
-  imports = [ ./waybar.nix ];
+  imports = [ ./waybar.nix ./wlogout.nix ];
 
   # fuzzel and swaylock moved to the real home-manager modules (from plain
   # xdg.configFile) so catppuccin.fuzzel/catppuccin.swaylock can merge their
@@ -111,6 +113,34 @@
       font = "Iosevka Nerd Font";
       font-size = 20;
       indicator-radius = 115;
+    };
+  };
+
+  # wob: on-screen volume/brightness popup. No catppuccin.nix module for it,
+  # so colors are hand-applied Catppuccin Latte hex (matches swaync/sway/niri
+  # — see DECISIONS.md). `systemd = false` because this desktop never set up
+  # systemd session integration for sway/niri (everything else is spawned
+  # directly by the compositor, not systemd-activated) -- wob is started the
+  # same way, piping into a hand-made FIFO instead of wob's socket unit.
+  services.wob = {
+    enable = true;
+    systemd = false;
+    settings = {
+      "" = {
+        timeout = 1000;
+        max = 100;
+        width = 300;
+        height = 24;
+        border_offset = 4;
+        border_size = 2;
+        bar_padding = 4;
+        anchor = "bottom";
+        margin = 48;
+        border_color = "acb0beff";
+        background_color = "e6e9efff";
+        bar_color = "fe640bff";
+      };
+      "style.muted".bar_color = "d20f39ff";
     };
   };
 
@@ -144,5 +174,6 @@
     "sway".source = ./dotfiles/sway;
     "niri".source = ./dotfiles/niri;
     "swaync".source = ./dotfiles/swaync;
+    "scripts".source = ./dotfiles/scripts;
   };
 }

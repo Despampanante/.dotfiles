@@ -116,7 +116,7 @@ let
 
     "custom/power" = {
       format = "⏻";
-      "on-click" = "exec ~/.config/waybar/scripts/power-menu.sh";
+      "on-click" = "exec wlogout -b 5"; # one row, no empty grid cell for 5 buttons
       tooltip = false;
     };
   };
@@ -176,7 +176,6 @@ in
   };
 
   xdg.configFile."waybar/config-niri".source = jsonFormat.generate "waybar-config-niri.json" niriBar;
-  xdg.configFile."waybar/scripts".source = ./dotfiles/waybar/scripts;
 
   catppuccin.waybar = {
     enable = true;

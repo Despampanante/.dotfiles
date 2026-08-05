@@ -15,14 +15,7 @@ set $right l
 
 set $term wezterm
 set $menu fuzzel
-set $powermenu ~/.config/waybar/scripts/power-menu.sh
-
-set $sink_volume pactl get-sink-volume @DEFAULT_SINK@ | grep '^Volume:' | cut -d / -f 2 | tr -d ' ' | sed 's/%//'
-set $source_volume pactl get-source-volume @DEFAULT_SOURCE@ | grep '^Volume:' | cut -d / -f 2 | tr -d ' ' | sed 's/%//'
-set $volume_down $(pactl set-sink-volume @DEFAULT_SINK@ -5% && $sink_volume)
-set $volume_up $(pactl set-sink-volume @DEFAULT_SINK@ +5% && $sink_volume)
-set $volume_mute $(pactl set-sink-mute @DEFAULT_SINK@ toggle && pactl get-sink-mute @DEFAULT_SINK@ | sed -En "/no/ s/.*/$($sink_volume)/p; /yes/ s/.*/0/p")
-set $mic_mute $(pactl set-source-mute @DEFAULT_SOURCE@ toggle && pactl get-source-mute @DEFAULT_SOURCE@ | sed -En "/no/ s/.*/$($source_volume)/p; /yes/ s/.*/0/p")
+set $powermenu wlogout -b 5
 
 ### Idle / lock
 exec swayidle -w \
@@ -118,15 +111,15 @@ bindsym --whole-window --border $mod+Shift+button4 resize shrink width 5 px or 5
 bindsym --whole-window --border $mod+Shift+button5 resize grow width 5 px or 5 ppt
 
 ### Volume / media / backlight
-bindsym --locked XF86AudioRaiseVolume exec $volume_up
-bindsym --locked XF86AudioLowerVolume exec $volume_down
-bindsym --locked XF86AudioMute exec $volume_mute
+bindsym --locked XF86AudioRaiseVolume exec ~/.config/scripts/wob-volume.sh up
+bindsym --locked XF86AudioLowerVolume exec ~/.config/scripts/wob-volume.sh down
+bindsym --locked XF86AudioMute exec ~/.config/scripts/wob-volume.sh mute
 bindsym XF86AudioPlay exec playerctl play
 bindsym XF86AudioPause exec playerctl pause
 bindsym XF86AudioNext exec playerctl next
 bindsym XF86AudioPrev exec playerctl previous
-bindsym XF86MonBrightnessUp exec brightnessctl -c backlight set +5%
-bindsym XF86MonBrightnessDown exec brightnessctl -c backlight set 5%-
+bindsym XF86MonBrightnessUp exec ~/.config/scripts/wob-brightness.sh up
+bindsym XF86MonBrightnessDown exec ~/.config/scripts/wob-brightness.sh down
 
 ### App shortcuts
 bindsym $mod+o exec firefox
