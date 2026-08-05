@@ -3,7 +3,7 @@
 # "legion-laptop host" entry for what's laptop-specific vs. carried over
 # from hosts/vm as-is.
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   imports = [
@@ -69,10 +69,46 @@
   # home-manager's pointerCursor resolves to (confirmed by building
   # catppuccin-cursors.lattePeach and checking share/icons/ directly, same
   # as how the GTK theme name was confirmed rather than guessed).
+  #
+  # Turned out not to be enough on its own: `systemctl show sddm.service -p
+  # Environment` came back completely empty even with this set, and more
+  # fundamentally the actual visible mouse pointer is drawn by SDDM's
+  # Wayland greeter's own embedded Weston compositor (`[Wayland]
+  # CompositorCommand` in /etc/sddm.conf.d -- confirmed by reading the
+  # NixOS sddm module source), not by anything reading XCURSOR_THEME
+  # directly. The module only auto-sets `[Theme] CursorTheme` for the
+  # default "breeze" theme (we override to catppuccin), and even then
+  # never forwards it into the Weston config it generates -- Weston's own
+  # weston.ini needs its own `[core] cursor-theme`/`cursor-size`, which the
+  # module doesn't expose at all. Overriding `compositorCommand` (marked
+  # `internal` in the module, but a real settable mkOption) with our own
+  # weston.ini that adds that section -- mirrors the module's own
+  # weston.ini generation for libinput/keyboard so nothing else regresses.
   environment.variables = {
     XCURSOR_THEME = "catppuccin-latte-peach-cursors";
     XCURSOR_SIZE = "32";
   };
+
+  services.displayManager.sddm.wayland.compositorCommand =
+    let
+      westonIni = (pkgs.formats.ini { }).generate "weston.ini" {
+        core = {
+          cursor-theme = "catppuccin-latte-peach-cursors";
+          cursor-size = 32;
+        };
+        libinput = {
+          enable-tap = config.services.libinput.mouse.tapping;
+          left-handed = config.services.libinput.mouse.leftHanded;
+        };
+        keyboard = {
+          keymap_model = config.services.xserver.xkb.model;
+          keymap_layout = config.services.xserver.xkb.layout;
+          keymap_variant = config.services.xserver.xkb.variant;
+          keymap_options = config.services.xserver.xkb.options;
+        };
+      };
+    in
+    "${lib.getExe pkgs.weston} --shell=kiosk -c ${westonIni}";
 
   programs.steam = {
     enable = true;

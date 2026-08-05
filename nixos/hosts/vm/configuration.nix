@@ -2,7 +2,7 @@
 # to the laptop). See ../../DECISIONS.md for the reasoning behind the
 # choices below.
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   imports = [
@@ -68,10 +68,39 @@
   # in home/santi.nix only applies inside the logged-in user's session, same
   # split as the GTK/SDDM theming above. Value confirmed by building
   # catppuccin-cursors.lattePeach and checking share/icons/ directly.
+  #
+  # Not sufficient on its own -- see legion-laptop/configuration.nix for the
+  # full story (`systemctl show sddm.service -p Environment` comes back
+  # empty even with this set, and the actual visible pointer is drawn by
+  # SDDM's own embedded Weston kiosk compositor, whose weston.ini the
+  # module never wires a cursor-theme into regardless of this variable).
+  # Overriding compositorCommand below with a weston.ini that adds `[core]
+  # cursor-theme`/`cursor-size` is the part that actually fixes it.
   environment.variables = {
     XCURSOR_THEME = "catppuccin-latte-peach-cursors";
     XCURSOR_SIZE = "32";
   };
+
+  services.displayManager.sddm.wayland.compositorCommand =
+    let
+      westonIni = (pkgs.formats.ini { }).generate "weston.ini" {
+        core = {
+          cursor-theme = "catppuccin-latte-peach-cursors";
+          cursor-size = 32;
+        };
+        libinput = {
+          enable-tap = config.services.libinput.mouse.tapping;
+          left-handed = config.services.libinput.mouse.leftHanded;
+        };
+        keyboard = {
+          keymap_model = config.services.xserver.xkb.model;
+          keymap_layout = config.services.xserver.xkb.layout;
+          keymap_variant = config.services.xserver.xkb.variant;
+          keymap_options = config.services.xserver.xkb.options;
+        };
+      };
+    in
+    "${lib.getExe pkgs.weston} --shell=kiosk -c ${westonIni}";
 
   # Steam gets the dedicated NixOS module rather than just the package --
   # it also pulls in 32-bit graphics libs and (with these two flags) opens
