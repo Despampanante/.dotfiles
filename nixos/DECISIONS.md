@@ -782,3 +782,44 @@ file (e.g. `conform.nvim`, `friendly-snippets`) for exactly this purpose.
 Didn't go further into per-project `direnv`/flake devShells for this --
 that's a bigger architectural change than one plugin's load timing
 justifies right now.
+
+## niri idle-lock, and the real GTK widget theme
+
+Two follow-up recommendations after the last round of changes, both
+accepted.
+
+**niri had no idle-lock at all.** Sway has had `swayidle` wired up since
+early in this project (`config.d/keybindings`: lock after 10 min, screen
+off after 15, lock before sleep) -- niri never got the equivalent, so a
+niri session just stayed unlocked indefinitely. Added the same
+`swayidle` invocation as a `spawn-at-startup` in `niri/config.kdl`, swapping
+sway's `swaymsg "output * power off/on"` for niri's own `niri msg action
+power-off-monitors` / `power-on-monitors` (confirmed these exist via `niri
+msg action --help`). Multi-line `spawn-at-startup` needed KDL's `\`
+line-continuation syntax (a node's arguments can span lines); validated
+with `niri validate -c` and sanity-checked the resulting `swayidle`
+invocation actually parses by running it directly for a couple seconds.
+
+**GTK widget theme was never set, only the icon theme was.**
+`catppuccin.gtk` in catppuccin/nix only covers icons (recolored Papirus,
+already wired via `catppuccin.gtk.icon.enable`) -- there's no widget/color
+theme option in that module at all. The actual Catppuccin GTK theme is a
+separate upstream project (`catppuccin/gtk`), packaged in nixpkgs as
+`catppuccin-gtk` with `variant`/`accents` override args. Set `gtk.theme`
+to `pkgs.catppuccin-gtk.override { variant = "latte"; accents = [ "peach" ]; }`
+-- confirmed the actual built theme name is
+`catppuccin-latte-peach-standard` (`${variant}-${accents}-${size}`, size
+defaults to "standard") by building the derivation and checking
+`share/themes/` directly, rather than guessing the name.
+
+Also caught (and fixed) a home-manager deprecation warning about
+`gtk.gtk4.theme`'s default changing in a future stateVersion -- the legacy
+default already resolves to exactly what we want (GTK4 apps use the same
+theme as GTK3), so set `gtk.gtk4.theme = config.gtk.theme;` explicitly.
+Confirmed this was purely cosmetic: the generated home-manager generation
+has the *identical* store path before and after, just without the warning.
+
+Verified live: launched `pavucontrol` (a real GTK3 app) on the VM with the
+new generation and screenshotted it -- light background, peach accent on
+the selected-output indicator, matching the rest of the desktop instead of
+default Adwaita.

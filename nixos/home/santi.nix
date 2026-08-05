@@ -166,6 +166,24 @@
 
   gtk.enable = true;
 
+  # catppuccin.nix's own gtk module only covers icons (Papirus, already
+  # wired via catppuccin.gtk.icon.enable above) -- it has no widget/color
+  # theme option, so without this, GTK apps (pavucontrol, nm-applet, any
+  # file manager added later) render in default Adwaita instead of
+  # Catppuccin. catppuccin/gtk is a separate upstream project, packaged in
+  # nixpkgs as catppuccin-gtk.
+  gtk.theme = {
+    name = "catppuccin-latte-peach-standard";
+    package = pkgs.catppuccin-gtk.override {
+      accents = [ "peach" ];
+      variant = "latte";
+    };
+  };
+  # Explicit rather than relying on the stateVersion-gated legacy default --
+  # this is exactly the legacy behavior (GTK4 apps use the same gtk.theme),
+  # just without the "your default will change later" warning on every build.
+  gtk.gtk4.theme = config.gtk.theme;
+
   xdg.configFile = {
     "palette.json".source = ./dotfiles/palette.json;
     "nvim".source = ./dotfiles/nvim;

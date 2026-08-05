@@ -47,6 +47,16 @@ spawn-at-startup "swaync"
 spawn-at-startup "nm-applet" "--indicator"
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 
+// Idle lock -- sway has had this via swayidle in config.d/keybindings all
+// along; niri never got the equivalent, so the session just stayed
+// unlocked indefinitely. Same timings, swapped sway's `swaymsg "output *
+// power off/on"` for niri's own `niri msg action power-off/on-monitors`.
+spawn-at-startup "swayidle" "-w" \
+    "timeout" "600" "swaylock -f -C /home/santi/.config/swaylock/config" \
+    "timeout" "900" "niri msg action power-off-monitors" \
+    "resume" "niri msg action power-on-monitors" \
+    "before-sleep" "swaylock -f -C /home/santi/.config/swaylock/config"
+
 // wob has no systemd session integration set up here (nothing else in this
 // config is systemd-activated either), so it's spawned directly, reading
 // off a FIFO we create ourselves instead of wob's usual socket unit.
