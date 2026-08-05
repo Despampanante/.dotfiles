@@ -872,3 +872,17 @@ niri's `xkb { }` block, same XKB option string sway uses (niri passes it
 straight through to libxkbcommon). Verified with `niri validate -c
 home/dotfiles/niri/config.kdl` and a full `nix build` of the vm system
 toplevel.
+
+## Waybar's battery icon was missing whenever the machine was plugged in
+
+Reported as "battery symbol isn't showing, it's plugged in." The `battery`
+module's `format` (`"{capacity}% {icon}"`) has the icon placeholder, but
+`format-charging` and `format-plugged` were copy-pasted without it --
+`"{capacity}% "`, confirmed with a hexdump, not just an invisible glyph.
+Waybar picks `format-plugged` whenever AC is online and the battery isn't
+actively discharging, which is true for this VM (`AC/online` is `1`,
+`BAT0/status` reads `Not charging`), so the percentage showed with no icon
+at all. Added `{icon}` back into both format strings in `home/waybar.nix`.
+Verified live: rebuilt, pointed a throwaway waybar instance directly at
+the newly-built `waybar-config-niri.json` from the nix store, and
+screenshotted the bar -- battery icon now renders next to the percentage.

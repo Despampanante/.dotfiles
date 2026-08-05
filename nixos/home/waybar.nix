@@ -36,8 +36,8 @@ let
         critical = 15;
       };
       format = "{capacity}% {icon}";
-      "format-charging" = "{capacity}% ";
-      "format-plugged" = "{capacity}% ";
+      "format-charging" = "{capacity}% {icon}";
+      "format-plugged" = "{capacity}% {icon}";
       "format-icons" = [ "" "" "" "" "" ];
     };
 
