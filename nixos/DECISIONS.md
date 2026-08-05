@@ -581,3 +581,38 @@ time (`client.unfocused #bcc0cc` in `sway/config.d/theme`) — this gap was
 niri-only. Validated with `niri validate -c`; couldn't hot-test visually
 since `~/.config/niri` is a whole-directory store symlink (unlike waybar's
 per-file management), so this needs a rebuild to see live.
+
+**Follow-up — the border fix "didn't work"**: it wasn't wrong, it just
+hadn't been deployed yet. Checked `/run/current-system`'s activation
+timestamp against git history: the last `nixos-rebuild switch` on the VM
+landed at 21:31, but the border-fix commit wasn't made until 21:39 — eight
+minutes later. The live `~/.config/niri/config.kdl` still had the old
+`focus-ring`-on/`border`-off config when this was reported. Needs another
+`nrs` to actually land.
+
+## Niri's hotkey-overlay (and other built-in popups) aren't themable
+
+Checked niri's actual default-config.kdl (fetched from the v26.04 tag on
+GitHub) for the `hotkey-overlay` block's options: the only setting it
+supports is `skip-at-startup` (don't show it automatically at login).
+There's no color/style config for it, or for niri's other built-in popups
+(exit-confirm dialog, screenshot UI, config-error notification) — they're
+compositor-native UI, hardcoded to niri's own dark/blue default look, not
+exposed through `config.kdl` in this version. Nothing to fix on our end;
+noting it so it's not mistaken for a missed config option later.
+
+## Black bar mid-animation when switching workspaces in niri
+
+This VM has no 3D acceleration passed through — `journalctl --user -u
+niri` shows `VMware: No 3D enabled` and `software EGL renderers are
+skipped` at startup, meaning niri's compositor is running on a degraded
+render path. That shows up visibly as a black flash during the
+workspace-switch slide animation (smooth cross-fade/slide compositing is
+exactly the kind of thing that glitches under a software/unaccelerated
+GPU path). Confirmed via niri's own animations wiki page that individual
+animations can be disabled without turning off animations globally
+(`animations { workspace-switch { off } }`), so only that one transition
+was disabled — window open/close, resizing, etc. keep animating. This is
+a VM-graphics limitation, not a real bug in the config; worth revisiting
+once this setup runs on the actual laptop hardware (real GPU) where the
+animation likely won't glitch at all.
