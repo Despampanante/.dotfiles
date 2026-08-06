@@ -96,6 +96,7 @@
     wob # services.wob below only wires the package in when systemd=true;
         # with systemd=false (see that block for why) it has to go here.
     claude-code
+    jq # needed by scripts/window-switcher.sh to parse `niri msg -j windows`
   ];
 
   home.file.".local/bin/tmux-sessionizer" = {

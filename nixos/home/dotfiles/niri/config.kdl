@@ -148,6 +148,7 @@ spawn-sh-at-startup "mkfifo -m 600 \"$XDG_RUNTIME_DIR/wob.sock\" 2>/dev/null; ta
 binds {
     Mod+Return { spawn "wezterm"; }
     Mod+D { spawn "fuzzel"; }
+    Mod+Tab { spawn "/home/santi/.config/scripts/window-switcher.sh"; }
     Mod+Q { close-window; }
     Mod+Shift+E { quit; }
     Mod+Escape { spawn "swaylock" "-f" "-C" "/home/santi/.config/swaylock/config"; }
