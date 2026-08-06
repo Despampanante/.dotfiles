@@ -79,6 +79,18 @@ workspace "w8"
 workspace "w9"
 workspace "w0"
 
+// No `match` -- applies to every window. Confirmed live that this was
+// actually needed: spawning a new window pinned to a different (not
+// currently visible) workspace left focus on whatever was already
+// focused instead of jumping to the new one, e.g. launching something
+// via fuzzel while on the terminal's workspace didn't bring it into
+// view. niri's default is to auto-focus "most" new windows but not
+// all (depends on activation-token details of how it was spawned) --
+// this forces it unconditionally rather than depending on that.
+window-rule {
+    open-focused true
+}
+
 // Pins each app to its workspace regardless of how the window was
 // created -- covers both the spawn-at-startup launches below and any
 // later manual launch (e.g. via fuzzel). If the named workspace above
