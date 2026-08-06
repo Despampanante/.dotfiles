@@ -98,6 +98,16 @@ window-rule {
     open-maximized true
 }
 
+// Rounded window corners, matching the pill-radius look already used in
+// waybar/wlogout elsewhere. geometry-corner-radius alone only rounds the
+// border/focus-ring decoration, not the window's actual content -- needs
+// clip-to-geometry true alongside it to round (and clip client-side
+// shadows off) the window itself too.
+window-rule {
+    geometry-corner-radius 10
+    clip-to-geometry true
+}
+
 // Pins each app to its workspace regardless of how the window was
 // created -- covers both the spawn-at-startup launches below and any
 // later manual launch (e.g. via fuzzel). If the named workspace above
