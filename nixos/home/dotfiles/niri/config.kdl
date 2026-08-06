@@ -112,6 +112,10 @@ window-rule {
     match app-id="^Spotify$"
     open-on-workspace "w0"
 }
+window-rule {
+    match app-id=r#"^md\.Obsidian$"#
+    open-on-workspace "w8"
+}
 
 // Niri has no built-in Xwayland support (unlike sway, which gets it for
 // free from wlroots) -- without this, X11-only apps just fail to open
@@ -132,10 +136,11 @@ spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 // Auto-launched at login instead of by hand -- lands on their pinned
 // workspace via the window-rules above regardless of launch order/timing.
 // Not wezterm: a terminal auto-spawning every login isn't wanted, unlike
-// these three which are meant to just always be running in the background.
+// these four which are meant to just always be running in the background.
 spawn-at-startup "discord"
 spawn-at-startup "spotify"
 spawn-at-startup "google-chrome"
+spawn-at-startup "obsidian"
 
 // Night light -- wlroots' own gamma-control protocol, same as sway's copy
 // of this in config.d/autostart. No location configured, so it runs on a
