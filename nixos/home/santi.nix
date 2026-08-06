@@ -6,6 +6,35 @@
 
 { config, pkgs, ... }:
 
+let
+  # A small stable-named wrapper for the polkit authentication agent --
+  # niri/config.kdl spawns it at startup (see that file), but the real
+  # binary lives under a /nix/store/<hash>-polkit-gnome-.../libexec path
+  # that changes every build/generation, so a plain dotfile can't reference
+  # it directly (confirmed: the old hardcoded /usr/lib/polkit-gnome/... path
+  # never existed on NixOS at all -- the agent was silently never running).
+  # This wrapper gives it a fixed PATH-resolvable name instead, so niri's
+  # plain-dotfile spawn command keeps working unchanged.
+  polkitAgentWrapper = pkgs.writeShellScriptBin "polkit-agent-wrapper"
+    "exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+
+  # TPM (tmux plugin manager) itself, fetched declaratively -- discovered
+  # while wiring up catppuccin/tmux that ~/.config/tmux/plugins/ didn't
+  # exist at all (confirmed live), meaning TPM had never actually been
+  # bootstrapped and no tmux plugin has ever loaded, before or after this
+  # change. The usual TPM setup expects a manual `git clone` as a one-time
+  # step; fetching it here instead means it's always present after a
+  # rebuild, no manual bootstrap needed. TPM itself still imperatively
+  # clones whatever plugins are `set -g @plugin`'d (catppuccin/tmux here)
+  # as sibling directories under plugins/ on first run/prefix+I -- that
+  # part isn't Nix-managed, same as any other TPM setup.
+  tpm = pkgs.fetchFromGitHub {
+    owner = "tmux-plugins";
+    repo = "tpm";
+    rev = "e261deb1b47614eed3400089ce7197dc68acc4eb";
+    sha256 = "1c4s1maismj0l297vhnxkc309mcn4936q7z4j7jhaqc9vij984m1";
+  };
+in
 {
   home.username = "santi";
   home.homeDirectory = "/home/santi";
@@ -36,9 +65,8 @@
       ll = "ls -la";
       la = "ls -A";
       gs = "git status";
-      # $(hostname) rather than a hardcoded host name so these work
-      # unchanged on any host this config is deployed to (vm, laptop, ...)
-      # -- see DECISIONS.md.
+      # $(hostname) rather than a hardcoded host name so these keep working
+      # unchanged if another host is ever added -- see DECISIONS.md.
       nrs = "sudo nixos-rebuild switch --flake ~/dotfiles/nixos#$(hostname)";
       nrb = "sudo nixos-rebuild build --flake ~/dotfiles/nixos#$(hostname)";
     };
@@ -97,6 +125,72 @@
         # with systemd=false (see that block for why) it has to go here.
     claude-code
     jq # needed by scripts/window-switcher.sh to parse `niri msg -j windows`
+
+    # Everything below used to live in environment.systemPackages on the
+    # host -- moved here since it's all user-facing software, not
+    # system-level (drivers/daemons/boot), which is what home-manager is
+    # for. `fuzzel`, `swaylock`, `waybar`, and `git` are deliberately not
+    # listed even though the old system list had them -- they're already
+    # installed by their own `programs.<app>.enable` modules below/in
+    # waybar.nix, listing them again would just be a redundant duplicate.
+    gh
+    vim
+    neovim
+    wget
+    wezterm
+
+    python3
+    python3Packages.pip
+    # hiPrio on gcc: home-manager's home.packages buildEnv (unlike
+    # environment.systemPackages, which tolerates this) fails outright on
+    # gcc and clang both providing bin/ld.bfd -- confirmed via a real build
+    # error ("two given paths contain a conflicting subpath"), not a
+    # hypothetical. This keeps both compilers fully available under their
+    # own gcc/clang/clang++ names, just lets gcc's copy of the generic
+    # ld.bfd win the conflict.
+    (pkgs.lib.hiPrio gcc)
+    clang
+    cmake
+    gnumake
+    gdb
+
+    nixd
+    lua-language-server
+    pyright
+    clang-tools
+    bash-language-server
+    tree-sitter
+
+    swaynotificationcenter
+    swayidle
+    swaybg
+    wlsunset
+    grim
+    slurp
+    playerctl
+    brightnessctl
+    pavucontrol
+    networkmanagerapplet
+    polkitAgentWrapper
+    wl-clipboard
+    libnotify
+    xwayland-satellite # niri's Xwayland bridge -- see niri/config.kdl's
+                        # spawn-at-startup.
+    # catppuccin-cursors.lattePeach deliberately NOT listed here even though
+    # it was in the old system package list -- catppuccin.cursors.enable
+    # below already provides its own copy via home.pointerCursor.package,
+    # and listing it again caused a real buildEnv conflict (two different
+    # versions of the same package, since catppuccin/nix pins its own
+    # cursor package separately from the top-level nixpkgs `pkgs` used
+    # here). The *system*-level copy (needed for SDDM's pre-login greeter,
+    # which home.packages can never reach) stays in
+    # hosts/legion-laptop/configuration.nix -- genuinely different need,
+    # not a duplicate of this one.
+
+    google-chrome
+    discord
+    obsidian
+    spotify
   ];
 
   home.file.".local/bin/tmux-sessionizer" = {
@@ -104,10 +198,12 @@
     executable = true;
   };
 
+  home.file.".config/tmux/plugins/tpm".source = tpm;
+
   # Procedurally generated (see dotfiles/wallpaper/generate.sh) rather than
   # downloaded, so it stays on-palette and has no license to track. Solid
-  # color (`swaybg -c "#eff1f5"`) is the documented fallback in the sway/
-  # niri configs if this ever needs reverting quickly.
+  # color (`swaybg -c "#eff1f5"`) is the documented fallback in the niri
+  # config if this ever needs reverting quickly.
   home.file.".local/share/wallpaper/catppuccin-latte.png".source =
     ./dotfiles/wallpaper/catppuccin-latte.png;
 
@@ -154,9 +250,9 @@
   };
 
   # wob: on-screen volume/brightness popup. No catppuccin.nix module for it,
-  # so colors are hand-applied Catppuccin Latte hex (matches swaync/sway/niri
-  # — see DECISIONS.md). `systemd = false` because this desktop never set up
-  # systemd session integration for sway/niri (everything else is spawned
+  # so colors are hand-applied Catppuccin Latte hex (matches swaync/niri —
+  # see DECISIONS.md). `systemd = false` because this desktop never set up
+  # systemd session integration for niri (everything else is spawned
   # directly by the compositor, not systemd-activated) -- wob is started the
   # same way, piping into a hand-made FIFO instead of wob's socket unit.
   services.wob = {
@@ -198,7 +294,7 @@
     gtk.icon.enable = true;
     cursors.enable = true;
     # waybar is enabled in ./waybar.nix, next to the rest of its config.
-    # sway/niri/swaync stay hand-applied — see DECISIONS.md for why.
+    # niri/swaync stay hand-applied — see DECISIONS.md for why.
   };
 
   gtk.enable = true;
@@ -222,11 +318,13 @@
   gtk.gtk4.theme = config.gtk.theme;
 
   xdg.configFile = {
-    "palette.json".source = ./dotfiles/palette.json;
     "nvim".source = ./dotfiles/nvim;
-    "tmux".source = ./dotfiles/tmux;
+    # Per-file, not whole-directory, unlike the others below -- leaves
+    # ~/.config/tmux/plugins/ free for TPM's own imperative plugin clones
+    # to live alongside the Nix-managed tpm symlink (home.file above),
+    # same reasoning as the earlier waybar/fuzzel/swaylock restructuring.
+    "tmux/tmux.conf".source = ./dotfiles/tmux/tmux.conf;
     "wezterm".source = ./dotfiles/wezterm;
-    "sway".source = ./dotfiles/sway;
     "niri".source = ./dotfiles/niri;
     "swaync".source = ./dotfiles/swaync;
     "scripts".source = ./dotfiles/scripts;

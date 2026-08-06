@@ -1,7 +1,5 @@
 # Host: legion-laptop (Lenovo Legion 5 17ACH6H, dual-booting Windows). See
-# ../../DECISIONS.md for the reasoning behind the choices below, and the
-# "legion-laptop host" entry for what's laptop-specific vs. carried over
-# from hosts/vm as-is.
+# ../../DECISIONS.md for the reasoning behind the choices below.
 
 { config, lib, pkgs, ... }:
 
@@ -31,6 +29,13 @@
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   time.timeZone = "America/New_York";
+  # Dual-booting Windows on the same hardware clock: Windows assumes the RTC
+  # is local time, Linux/NixOS assumes UTC by default -- without this,
+  # whichever OS you booted into last "corrects" the clock for its own
+  # assumption, so the other OS reads the wrong time until its own next
+  # correction. Standard fix on the NixOS side (Windows itself can't easily
+  # be told to use UTC).
+  time.hardwareClockInLocalTime = true;
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_US.UTF-8";
@@ -50,7 +55,6 @@
     variant = "";
   };
 
-  # Same sway/niri dual setup as hosts/vm -- see DECISIONS.md.
   services.displayManager.sddm.enable = true;
   services.displayManager.sddm.wayland.enable = true;
 
@@ -116,13 +120,6 @@
     localNetworkGameTransfers.openFirewall = true;
   };
 
-  programs.sway = {
-    enable = true;
-    wrapperFeatures.gtk = true;
-    extraPackages = with pkgs; [
-      sway-contrib.grimshot
-    ];
-  };
   programs.niri.enable = true;
 
   xdg.portal = {
@@ -138,15 +135,9 @@
   services.printing.enable = true;
   hardware.bluetooth.enable = true;
 
-  # Needed for sway/niri to get a working GL context -- same as vm, but for
-  # real reasons here (actual GPU driver setup) rather than working around
-  # virtualized graphics.
+  # Needed for niri to get a working GL context at all.
   hardware.graphics.enable = true;
   hardware.graphics.enable32Bit = true; # 32-bit Steam games need this too
-
-  # NOT carrying over vm's WLR_NO_HARDWARE_CURSORS=1 -- that was a
-  # VirtualBox-specific cursor-plane workaround (see DECISIONS.md). Re-add
-  # if the real GPU turns out to have the same issue.
 
   # Hybrid graphics: AMD Cezanne iGPU (amdgpu, drives the internal panel --
   # this is a muxless laptop, the NVIDIA GPU has no display wired to it at
@@ -186,9 +177,9 @@
     };
   };
 
-  # Still needed even under Wayland-only compositors (niri/sway) -- this is
-  # what wires up the proprietary driver's GLX/EGL libraries at all, which
-  # Xwayland (and anything using XWayland-satellite under niri) needs.
+  # Still needed even under a Wayland-only compositor (niri) -- this is what
+  # wires up the proprietary driver's GLX/EGL libraries at all, which
+  # Xwayland (and xwayland-satellite, niri's Xwayland bridge) needs.
   services.xserver.videoDrivers = [ "nvidia" ];
 
   services.pulseaudio.enable = false;
@@ -212,61 +203,19 @@
 
   nixpkgs.config.allowUnfree = true;
 
-  environment.systemPackages = with pkgs; [
-    git
-    gh
-    vim
-    neovim
-    wget
-    wezterm
+  # Everything user-facing (desktop apps, dev tooling, LSPs) lives in
+  # home.packages in home/santi.nix instead -- system-level config here
+  # stays focused on hardware/drivers/daemons/boot.
+  #
+  # This one exception stays here: SDDM's pre-login greeter reads
+  # XCURSOR_THEME/the weston.ini cursor-theme setting above against the
+  # *system* profile (/run/current-system/sw/share/icons) -- home.packages
+  # only ever reaches the user profile, which doesn't exist yet at greeter
+  # time, so this can't move with everything else.
+  environment.systemPackages = [ pkgs.catppuccin-cursors.lattePeach ];
 
-    python3
-    python3Packages.pip
-    gcc
-    clang
-    cmake
-    gnumake
-    gdb
-
-    nixd
-    lua-language-server
-    pyright
-    clang-tools
-    bash-language-server
-    tree-sitter
-
-    waybar
-    fuzzel
-    swaynotificationcenter
-    swaylock
-    swayidle
-    swaybg
-    wlsunset
-    grim
-    slurp
-    playerctl
-    brightnessctl
-    pavucontrol
-    networkmanagerapplet
-    polkit_gnome
-    wl-clipboard
-    libnotify
-    xwayland-satellite # niri's Xwayland bridge -- see niri/config.kdl's
-                        # spawn-at-startup. Not needed for sway, which has
-                        # Xwayland support built in via wlroots.
-    catppuccin-cursors.lattePeach # so XCURSOR_THEME above actually
-                                   # resolves to something on the system
-                                   # (not just home-manager's) XDG data dirs
-
-    google-chrome
-    discord
-    obsidian
-    spotify
-  ];
-
-  # Real install date (from the fresh /etc/nixos/configuration.nix
-  # nixos-generate-config wrote on this machine), not vm's "25.05" --
-  # stateVersion tracks each host's own first-install release, not the
-  # currently running one.
+  # Real install date, from the fresh /etc/nixos/configuration.nix
+  # nixos-generate-config wrote on this machine -- stateVersion tracks this
+  # host's own first-install release, not the currently running one.
   system.stateVersion = "26.05";
 }

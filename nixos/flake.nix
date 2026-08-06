@@ -14,28 +14,6 @@
 
   outputs = { self, nixpkgs, home-manager, catppuccin, ... }@inputs: {
     nixosConfigurations = {
-      # This VM, used to build up the config before migrating to the laptop.
-      vm = nixpkgs.lib.nixosSystem {
-        specialArgs = { inherit inputs; };
-        modules = [
-          ./hosts/vm/configuration.nix
-          catppuccin.nixosModules.catppuccin
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.santi = import ./home/santi.nix;
-            home-manager.sharedModules = [ catppuccin.homeModules.catppuccin ];
-            # Pre-existing, non-symlinked files at a path home-manager wants
-            # to manage (leftover app defaults, or artifacts from switching
-            # xdg.configFile between whole-directory and per-file sources,
-            # like the waybar/fuzzel/swaylock restructuring) get backed up
-            # with this suffix instead of blocking activation.
-            home-manager.backupFileExtension = "backup";
-          }
-        ];
-      };
-
       # The real laptop (Lenovo Legion 5 17ACH6H). See
       # hosts/legion-laptop/configuration.nix for why this is
       # "legion-laptop" (hyphen) rather than the invalid "legion_laptop"
@@ -52,6 +30,11 @@
             home-manager.useUserPackages = true;
             home-manager.users.santi = import ./home/santi.nix;
             home-manager.sharedModules = [ catppuccin.homeModules.catppuccin ];
+            # Pre-existing, non-symlinked files at a path home-manager wants
+            # to manage (leftover app defaults, or artifacts from switching
+            # xdg.configFile between whole-directory and per-file sources,
+            # like the waybar/fuzzel/swaylock restructuring) get backed up
+            # with this suffix instead of blocking activation.
             home-manager.backupFileExtension = "backup";
           }
         ];

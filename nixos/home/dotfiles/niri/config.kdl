@@ -148,7 +148,13 @@ spawn-at-startup "swaybg" "-i" "/home/santi/.local/share/wallpaper/catppuccin-la
 spawn-at-startup "waybar" "-c" "/home/santi/.config/waybar/config-niri" "-s" "/home/santi/.config/waybar/style.css"
 spawn-at-startup "swaync"
 spawn-at-startup "nm-applet" "--indicator"
-spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+// The real polkit-gnome-authentication-agent-1 binary lives under a
+// /nix/store/<hash>-.../libexec path that changes every build, so this
+// spawns a fixed-name wrapper (see the `polkitAgentWrapper` derivation in
+// home/santi.nix) instead of trying to hardcode a real path here -- the
+// old hardcoded /usr/lib/polkit-gnome/... path never existed on NixOS at
+// all, so this agent was silently never running before.
+spawn-at-startup "polkit-agent-wrapper"
 
 // Auto-launched at login instead of by hand -- lands on their pinned
 // workspace via the window-rules above regardless of launch order/timing.
@@ -159,10 +165,12 @@ spawn-at-startup "spotify"
 spawn-at-startup "google-chrome"
 spawn-at-startup "obsidian"
 
-// Night light -- wlroots' own gamma-control protocol, same as sway's copy
-// of this in config.d/autostart. No location configured, so it runs on a
-// fixed clock instead of real sunrise/sunset -- see DECISIONS.md.
-spawn-at-startup "wlsunset" "-S" "07:00" "-s" "19:30" "-t" "3500" "-T" "6500"
+// Night light -- wlroots' own gamma-control protocol. Real lat/long for
+// Arlington, VA (not GPS-aware -- would need manual adjustment during
+// extended stretches elsewhere, e.g. Long Island) instead of the earlier
+// fixed 7am/7:30pm clock, now that there's a real, known location -- see
+// DECISIONS.md.
+spawn-at-startup "wlsunset" "-l" "38.88" "-L" "-77.10" "-t" "3500" "-T" "6500"
 
 // Idle lock -- sway has had this via swayidle in config.d/keybindings all
 // along; niri never got the equivalent, so the session just stayed

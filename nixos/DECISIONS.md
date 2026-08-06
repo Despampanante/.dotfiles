@@ -1102,3 +1102,166 @@ font (`F025` headphones, `F095` phone/hands-free, `F026` volume-off for
 muted). Verified live: rebuilt, restarted the running `waybar` against the
 newly-built `config-niri.json`, screenshotted -- headphones icon renders
 correctly now.
+
+## Full repo cleanup pass: simplify, dedupe, best practices
+
+Asked for a full audit of the whole config with three goals: as simple/
+elegant as possible, prefer reusing existing modules/plugins over
+hand-rolled config, and share config across hosts where duplicated. Two
+research passes (desktop dotfiles; hosts+flake.nix diff) turned up a list
+of concrete findings, reviewed and executed as a plan (see the exchange
+for the full research detail) with two decisions that changed its shape
+mid-review:
+
+- **The `vm` host is gone.** It served its purpose (bootstrapping this
+  config safely before the real laptop migration) and isn't needed going
+  forward -- your call, not something that came up in the audit itself.
+  Deleted `hosts/vm/` entirely and its `flake.nix` entry. With only one
+  host left, a `hosts/common.nix` shared module would be pure premature
+  abstraction (nothing left to share between) -- skipped in favor of
+  keeping `hosts/legion-laptop/configuration.nix` flat, which is also just
+  the more standard shape for a single-host flake.
+- **Sway is gone too.** Also your call: it was mostly a "try both before
+  committing" scaffold from early in this project, ported from the
+  `legacy` branch (itself already flagged as abandoned when it was reused
+  -- see way earlier in this file), and niri's what's actually been used
+  all along. Deleted `home/dotfiles/sway/` entirely (`config.d/*` and
+  `scripts/screenshot.sh`) and `programs.sway`/`sway-contrib.grimshot`
+  from the host config. Niri has its own native `screenshot`/
+  `screenshot-screen`/`screenshot-window` actions already bound (`Print`/
+  `Ctrl+Print`/`Alt+Print`), so nothing lost there.
+
+### Moved all user-facing packages to `home.packages`
+
+`environment.systemPackages` in the host file (git, neovim, wezterm, the
+LSP servers, waybar/fuzzel/swaync/swaylock/swayidle/swaybg/wlsunset/grim/
+slurp/playerctl/brightnessctl/pavucontrol/nm-applet/polkit_gnome/
+wl-clipboard/libnotify/xwayland-satellite/catppuccin-cursors.lattePeach,
+google-chrome/discord/obsidian/spotify) was entirely user-session
+software -- moved the whole list into `home/santi.nix`'s `home.packages`
+instead, the idiomatic split (home-manager owns the user's environment,
+system config stays focused on hardware/drivers/daemons/boot). Also
+dropped `fuzzel`, `swaylock`, `waybar`, and `git` from the moved list
+entirely -- all four were already being installed redundantly by their
+own `programs.<app>.enable` modules elsewhere in the same file, just
+never noticed since `environment.systemPackages` and home-manager's
+`home.packages` are separate profiles that don't cross-check each other
+for duplicates.
+
+**Two real conflicts found doing this, both only visible once actually
+built (not from reading the code):**
+- `gcc` and `clang` both provide `bin/ld.bfd` -- `environment.systemPackages`
+  tolerates this (confirmed, it worked there the whole time) but
+  home-manager's `home.packages` buildEnv does not, failing outright with
+  "two given paths contain a conflicting subpath". Fixed with
+  `pkgs.lib.hiPrio` on `gcc`, which resolves the specific file conflict
+  while keeping both compilers fully available under their own names.
+- `catppuccin-cursors.lattePeach` conflicted with *itself* -- listing it
+  explicitly in `home.packages` collided with the copy `catppuccin.cursors.
+  enable` (already in this file) pulls in independently via `home.
+  pointerCursor.package`, because `catppuccin/nix` pins its own cursor
+  package version separately from the top-level `nixpkgs` `pkgs` used
+  here (`2.0.0-lattePeach` vs. `0-unstable-2025-02-22-lattePeach`).
+  Dropped the redundant explicit entry -- but this package turned out to
+  need a genuine exception to the "everything moves to home.packages"
+  rule anyway: SDDM's pre-login greeter reads it from the *system*
+  profile (`/run/current-system/sw/share/icons`, per the weston.ini
+  cursor-theme fix earlier in this file), which `home.packages` can never
+  reach since it doesn't exist until after login. Left this one specific
+  package in `environment.systemPackages`, with a comment explaining why
+  it's a deliberate exception and not an oversight.
+
+### Fixed the polkit-gnome authentication agent (real bug, never worked)
+
+`niri/config.kdl` hardcoded `/usr/lib/polkit-gnome/polkit-gnome-
+authentication-agent-1` -- confirmed this path never existed on NixOS at
+all (the real binary lives under a `/nix/store/<hash>-polkit-gnome-.../
+libexec/` path that changes every build), so the polkit agent has
+silently never launched, this whole time, on either compositor (sway had
+the identical bug before it was deleted too). Fixed with a small
+`pkgs.writeShellScriptBin` wrapper (`polkitAgentWrapper` in
+`home/santi.nix`) that execs the real path, added to `home.packages`
+under the stable name `polkit-agent-wrapper`, with niri spawning that
+short name instead. Verified live: built the wrapper, ran it directly --
+it correctly resolves to and execs the real polkit-gnome binary (got
+"authentication agent already exists for the given subject", which is
+confirmation it *found and ran* the real binary, not a wrapper bug --
+something else in this long test session had already registered one).
+
+### tmux: Catppuccin Latte, and TPM itself had never actually worked
+
+`tmux.conf` was still hardcoded to the old warm-light palette hex,
+referencing `~/.config/palette.json` -- confirmed everything else
+(wezterm, nvim, waybar, GTK, SDDM, cursors, Obsidian) already converted,
+tmux was just missed. Replaced with `catppuccin/tmux` via TPM (same
+mechanism `tmux.conf` already uses) -- `@catppuccin_flavor 'latte'`, plus
+`@catppuccin_status_session`/`@catppuccin_status_date_time` modules for
+status-left/right instead of hand-rolled hex. Confirmed by reading the
+plugin's actual `catppuccin_tmux.conf` (not guessing) that it also
+handles `pane-border-style`, `message-style`, `mode-style`,
+`clock-mode-colour`, and window-status formatting automatically -- all of
+which the old config was hand-rolling -- so those lines were dropped
+entirely rather than ported.
+
+**Bigger find along the way**: `~/.config/tmux/plugins/` didn't exist at
+all -- TPM itself had never been bootstrapped (the usual setup needs a
+manual `git clone` that never happened), meaning *no* tmux plugin has
+ever loaded, before or after this change. Fixed properly rather than just
+running the clone once for this session: added `tpm` as a
+`pkgs.fetchFromGitHub` in `home/santi.nix`, symlinked to
+`~/.config/tmux/plugins/tpm` via `home.file` -- always present after a
+rebuild, no manual bootstrap step. This needed `xdg.configFile."tmux"` to
+switch from whole-directory to per-file (`"tmux/tmux.conf"` only), same
+restructuring already done for waybar/fuzzel/swaylock earlier in this
+file, so `~/.config/tmux/plugins/` stays free for TPM's own imperative
+clones of actual plugins (catppuccin/tmux) to live alongside the
+Nix-managed `tpm` symlink. Verified live end-to-end: copied the built
+config + TPM into the live session (same live-testing approach used all
+session for niri/waybar), ran TPM's real install script, confirmed
+`catppuccin/tmux` actually cloned and sourced, screenshotted a real tmux
+session -- status bar renders in proper Latte colors (session/window
+pills, sapphire clock module with icon), not the old warm-light look.
+
+### Real wlsunset location instead of a fixed clock
+
+Both compositor configs ran `wlsunset -S 07:00 -s 19:30` (fixed schedule)
+-- flagged as worth revisiting once on the real laptop with a known
+location, back when this was still a VM. Now using real lat/long for
+Arlington, VA (`-l 38.88 -L -77.10`), calculated real solar sunrise/
+sunset instead. Static, not GPS-aware -- would need manual adjustment
+during extended stretches elsewhere (e.g. Long Island). Verified live by
+running `wlsunset` directly with the new coordinates -- calculated a sane
+trajectory (dawn 05:41, sunrise 06:27, sunset 20:01, dusk 20:47, correct
+for Arlington in August).
+
+### Removed dead `palette.json`
+
+Once tmux converted to Catppuccin, nothing on the nixos side referenced
+`home/dotfiles/palette.json` (the old warm-light `mini.hues` palette)
+anymore -- nvim/wezterm had already moved off it earlier, tmux was the
+last holdout. Removed the file and its `xdg.configFile` entry. Independent
+of `windows/`'s own separately-duplicated copy (different repo half, not
+touched).
+
+### Windows dual-boot clock fix
+
+Raised separately: this laptop dual-boots Windows, and the clock was
+presumably drifting/wrong when switching OSes. Classic RTC time-standard
+mismatch -- Windows assumes the hardware clock is local time, Linux
+assumes UTC by default, so whichever OS boots "corrects" the clock for
+its own assumption and the other reads wrong until its next correction.
+Added `time.hardwareClockInLocalTime = true;` (note: NOT
+`hardwareClockLocalTime`, a plausible-sounding option name that doesn't
+actually exist -- caught immediately by `nix flake check`) -- the
+standard NixOS-side fix, since Windows itself can't easily be told to use
+UTC instead.
+
+### Explicitly reviewed, left as-is
+
+The hand-applied Catppuccin hex in `niri/config.kdl`'s border colors,
+`home/dotfiles/swaync/style.css`, `home/wlogout.nix`, and `services.wob`
+in `home/santi.nix` are all **intentionally** hand-rolled rather than
+using `catppuccin.nix` modules -- niri has no catppuccin module at all,
+and swaync's module can't layer the custom notification-card CSS on top
+(both already explained earlier in this file). Not touched here --
+reviewed, not missed.

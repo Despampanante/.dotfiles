@@ -1,6 +1,0 @@
-# Sway config — modular, split under config.d/ (same pattern as the old
-# Despampanante/.dotfiles legacy branch, minus Pinebook-specific bits).
-#
-# Read `man 5 sway` for a complete reference.
-
-include $HOME/.config/sway/config.d/*
