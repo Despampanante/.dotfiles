@@ -32,7 +32,7 @@ index=$(
       end
     ) + "  " + .title + "  —  " + .app_id
   ' <<< "$json" \
-    | fuzzel --dmenu --index --prompt "window> "
+    | fuzzel --dmenu --index --prompt "❯ "
 )
 
 niri msg action focus-window --id "${ids[$index]}"
