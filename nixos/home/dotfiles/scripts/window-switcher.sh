@@ -5,10 +5,15 @@
 # window's workspace on its own -- confirmed live, no extra plumbing needed
 # for that part.
 #
-# Per-app icons -- codepoints confirmed present in the installed Iosevka
-# Nerd Font via fontTools before use (this font build is missing some
-# glyphs a full Nerd Font install would have, see DECISIONS.md's waybar
-# icon entries -- checking first avoided repeating that bug here).
+# Real per-app icons, same as the launcher shows -- fuzzel's --dmenu mode
+# supports Rofi's extended dmenu protocol (append \0icon\x1f<name> to a
+# line), confirmed via `man fuzzel`. Uses the window's own app-id directly
+# as the icon name rather than a hardcoded per-app mapping -- most icon
+# themes name their icon after the same string used as the desktop/app id
+# (confirmed for wezterm/chrome/discord/steam), and fuzzel just silently
+# shows no icon if a name doesn't resolve, so this doesn't need to be more
+# elaborate than that. Not --dmenu0 -- the man page says icons aren't
+# supported in that mode.
 #
 # fuzzel --index (not embedding the window id in the visible text) keeps
 # the display clean -- it prints the selected line's position instead of
@@ -20,18 +25,7 @@ json=$(niri msg -j windows)
 mapfile -t ids < <(jq -r '.[].id' <<< "$json")
 
 index=$(
-  jq -r '
-    .[] |
-    (
-      if .app_id == "org.wezfurlong.wezterm" then ""
-      elif .app_id == "google-chrome" then ""
-      elif .app_id == "discord" then ""
-      elif .app_id == "Spotify" then ""
-      elif .app_id == "md.Obsidian" then ""
-      else ""
-      end
-    ) + "  " + .title + "  —  " + .app_id
-  ' <<< "$json" \
+  jq -r '.[] | .title + "  —  " + .app_id + "\u0000icon\u001f" + .app_id' <<< "$json" \
     | fuzzel --dmenu --index --prompt "❯ "
 )
 
