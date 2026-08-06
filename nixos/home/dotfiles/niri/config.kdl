@@ -91,6 +91,13 @@ window-rule {
     open-focused true
 }
 
+// Also match-less -- every new tiled window opens as a full-width
+// (maximized) column instead of the default 0.5 proportion from the
+// layout block below, rather than needing Mod+F by hand each time.
+window-rule {
+    open-maximized true
+}
+
 // Pins each app to its workspace regardless of how the window was
 // created -- covers both the spawn-at-startup launches below and any
 // later manual launch (e.g. via fuzzel). If the named workspace above
