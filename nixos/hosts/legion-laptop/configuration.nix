@@ -62,7 +62,7 @@
     enable = true;
     autoEnable = false;
     flavor = "latte";
-    accent = "peach";
+    accent = "lavender";
     sddm.enable = true;
   };
 
@@ -71,7 +71,7 @@
   # home-manager), which SDDM runs entirely outside of, same split as the
   # GTK/SDDM theming above. XCURSOR_THEME here has to match the folder name
   # home-manager's pointerCursor resolves to (confirmed by building
-  # catppuccin-cursors.lattePeach and checking share/icons/ directly, same
+  # catppuccin-cursors.latteLavender and checking share/icons/ directly, same
   # as how the GTK theme name was confirmed rather than guessed).
   #
   # Turned out not to be enough on its own: `systemctl show sddm.service -p
@@ -89,7 +89,7 @@
   # weston.ini that adds that section -- mirrors the module's own
   # weston.ini generation for libinput/keyboard so nothing else regresses.
   environment.variables = {
-    XCURSOR_THEME = "catppuccin-latte-peach-cursors";
+    XCURSOR_THEME = "catppuccin-latte-lavender-cursors";
     XCURSOR_SIZE = "32";
   };
 
@@ -97,7 +97,7 @@
     let
       westonIni = (pkgs.formats.ini { }).generate "weston.ini" {
         core = {
-          cursor-theme = "catppuccin-latte-peach-cursors";
+          cursor-theme = "catppuccin-latte-lavender-cursors";
           cursor-size = 32;
         };
         libinput = {
@@ -201,6 +201,12 @@
 
   programs.firefox.enable = true;
 
+  # Required by home-manager's services.easyeffects (home/santi.nix) --
+  # the daemon needs dconf/gsettings to persist its own state, and the
+  # module docs explicitly call out that it won't work correctly without
+  # this enabled at the system level.
+  programs.dconf.enable = true;
+
   nixpkgs.config.allowUnfree = true;
 
   # Everything user-facing (desktop apps, dev tooling, LSPs) lives in
@@ -212,7 +218,7 @@
   # *system* profile (/run/current-system/sw/share/icons) -- home.packages
   # only ever reaches the user profile, which doesn't exist yet at greeter
   # time, so this can't move with everything else.
-  environment.systemPackages = [ pkgs.catppuccin-cursors.lattePeach ];
+  environment.systemPackages = [ pkgs.catppuccin-cursors.latteLavender ];
 
   # Real install date, from the fresh /etc/nixos/configuration.nix
   # nixos-generate-config wrote on this machine -- stateVersion tracks this

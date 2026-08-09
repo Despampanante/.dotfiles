@@ -19,11 +19,13 @@ home/santi.nix                 home-manager config for santi -- owns all
                                  dotfiles (system config stays focused on
                                  hardware/drivers/daemons/boot)
 home/dotfiles/                  plain dotfiles symlinked in by home-manager:
-                                 neovim, tmux, wezterm (currently duplicated
-                                 copies of ../windows/dot_config/* — see
+                                 neovim, tmux (currently duplicated copies
+                                 of ../windows/dot_config/* — see
                                  DECISIONS.md on why not shared yet), plus
-                                 niri, waybar, fuzzel, swaync, swaylock
-                                 (Linux-desktop-only, no Windows equivalent)
+                                 niri, waybar, fuzzel, swaync, swaylock,
+                                 ghostty (Linux-desktop-only, no Windows
+                                 equivalent -- Windows keeps wezterm
+                                 instead, see DECISIONS.md)
 ```
 
 ## Rebuilding

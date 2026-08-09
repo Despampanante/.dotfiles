@@ -14,7 +14,7 @@
     border-radius: 8px;
     margin: 6px 12px;
     padding: 4px;
-    border: 1px solid #fe640b; /* peach */
+    border: 1px solid #7287fd; /* lavender */
     background: #ccd0da; /* surface0 */
 }
 
@@ -44,13 +44,13 @@
 }
 
 .notification .close-button:hover {
-    background: #fe640b; /* peach */
+    background: #7287fd; /* lavender */
     color: #eff1f5; /* base */
 }
 
 .control-center {
     background: #e6e9ef; /* mantle */
-    border: 1px solid #fe640b; /* peach */
+    border: 1px solid #7287fd; /* lavender */
     border-radius: 8px;
 }
 
@@ -75,7 +75,7 @@
 }
 
 .widget-dnd > switch:checked {
-    background: #fe640b; /* peach */
+    background: #7287fd; /* lavender */
 }
 
 .widget-mpris {

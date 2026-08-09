@@ -1265,3 +1265,341 @@ using `catppuccin.nix` modules -- niri has no catppuccin module at all,
 and swaync's module can't layer the custom notification-card CSS on top
 (both already explained earlier in this file). Not touched here --
 reviewed, not missed.
+
+## Linux terminal: wezterm -> ghostty, because wezterm's leader was eating tmux commands
+
+`wezterm.lua`'s `config.leader` was `Ctrl-b` -- the same chord as tmux's
+default (never-overridden) prefix in `tmux.conf`. WezTerm intercepts key
+chords at the terminal-emulator layer, before anything reaches the shell
+running inside it, so any tmux binding that collided with one of
+wezterm's own LEADER-bound actions (splits, pane nav, tab/window
+management, the sessionizer -- wezterm.lua had re-implemented tmux's
+whole binding set under the same leader "for when not in tmux") got
+silently swallowed by wezterm instead of reaching tmux, any time both
+were nested. There was no detection logic to disable wezterm's bindings
+while a tmux client was attached, so the collision was live 100% of the
+time, not just as an edge case.
+
+Since tmux is the actual day-to-day multiplexer (splits, panes, sessions,
+`tmux-sessionizer`), wezterm's Lua-scripted mirror of all that was
+redundant *and* the thing actively breaking it. Rather than just moving
+wezterm's leader off `Ctrl-b`, switched the Linux side to Ghostty
+instead -- it has no built-in leader/multiplexer concept at all (checked
+its actual default keybind list: nothing bound on `ctrl+b`), so there's
+nothing left to collide with tmux by construction, and its config is a
+handful of flat `key = value` lines instead of a Lua file mirroring
+tmux's bindings.
+
+Windows keeps wezterm untouched (`windows/dot_config/wezterm/wezterm.lua`,
+not touched by this change) -- tmux doesn't run there, so there's no
+nesting/collision risk to design around, and Ghostty has no Windows build
+to begin with.
+
+Concrete changes: `home/santi.nix` swaps the `wezterm` package for
+`ghostty`, updates `programs.fuzzel.settings.main.terminal` to `"ghostty"`,
+and repoints `xdg.configFile` from `dotfiles/wezterm` to a new
+`dotfiles/ghostty/config`. `niri/config.kdl`'s `Mod+Return` now spawns
+`ghostty`, and its window-rule pinning the terminal to workspace `w1`
+matches Ghostty's real GTK app-id (`com.mitchellh.ghostty`, confirmed from
+its bundled `.desktop` file) instead of wezterm's
+`org.wezfurlong.wezterm`. Deleted the now-dead
+`home/dotfiles/wezterm/wezterm.lua`.
+
+The new `dotfiles/ghostty/config` carries over the parts of `wezterm.lua`
+that were actual settings rather than tmux-mirroring: `theme = Catppuccin
+Latte` (confirmed exact, space-including name by building the real
+`ghostty` package and listing its bundled
+`share/ghostty/themes/`, rather than guessing), `font-family = Iosevka
+Nerd Font` / `font-size = 16` (matching fuzzel's already-matched size),
+and `window-decoration = false` (niri has `prefer-no-csd` and no SSD, same
+reasoning as wezterm's old `window_decorations = "NONE"`). Verified the
+config file itself parses cleanly with the real binary's
+`ghostty +validate-config --config-file=...` (no display available in
+this environment to verify the running window itself, so a live
+`nrs` + real-session check is still owed on next login -- flagging here
+rather than claiming full verification).
+
+## Added Godot and Blender, with Blender wrapped for NVIDIA dGPU offload
+
+Plain `godot` (GDScript-only; the C#/Mono variant, `godot_4-mono`, wasn't
+wanted) added to `home.packages` with no wrapping -- nothing about it
+needs the dGPU specifically.
+
+Blender is different: this laptop's hybrid graphics setup (AMD iGPU
+drives the panel, NVIDIA RTX dGPU only reachable via PRIME render
+offload -- see the `hardware.nvidia` block in
+`hosts/legion-laptop/configuration.nix`) means GUI apps launch on the
+iGPU by default. Fine for most things, but leaves Cycles GPU rendering
+(CUDA/OptiX) unavailable on the dGPU unless explicitly offloaded via the
+`nvidia-offload` wrapper command that
+`hardware.nvidia.prime.offload.enableOffloadCmd` already puts on PATH.
+
+Added a `blenderOffload` derivation in `home/santi.nix` (same `let`
+block as the existing `polkitAgentWrapper`/`tpm`, same reasoning for
+living there instead of as a plain dotfile) instead of just the raw
+`blender` package: a `writeShellScriptBin "blender"` that `exec`s
+`nvidia-offload "${pkgs.blender}/bin/blender" "$@"` by store path (not
+by PATH name), plus a `makeDesktopItem` and the real package's
+`share/icons` copied in via `symlinkJoin`, so it shows up in fuzzel as a
+normal "Blender" launcher rather than a bare, icon-less binary. Calling
+the real blender by store path rather than by PATH name means this
+wrapper doesn't also need plain `blender` installed alongside it (which
+would've collided on `bin/blender` in the `home.packages` buildEnv
+anyway, same class of conflict as the existing gcc/clang `hiPrio` note).
+
+Verified for real, not just evaluated: built the actual
+`home-manager-generation` output (not just `nix flake check`, which only
+evaluates) and confirmed no buildEnv collisions, that the resulting
+profile's `bin/blender` is the wrapper (not a raw binary) and its
+`share/applications/blender.desktop` renders as expected, and that
+running it (`--version`, headless -- no display in this environment)
+actually launches the real Blender 5.2.0 binary through the wrapper
+rather than erroring. Did not verify GPU selection itself (`nvidia-smi`
+picking it up mid-render) -- that needs a real display session, still
+owed on next login alongside the ghostty check above.
+
+## Accent swap: peach -> lavender, everywhere
+
+Purely aesthetic, no functional motivation -- comparing all 14 Latte
+accents side by side (swatch reference built during the session) led to
+picking lavender over the existing peach. Not "because it's
+`catppuccin/nix`'s own default" (that default is mauve, not lavender,
+confirmed straight from `catppuccin/nix`'s `modules/global.nix` --
+upstream's default was never actually the reason here).
+
+Two central knobs (`catppuccin.accent`) live in `home/santi.nix` and
+`hosts/legion-laptop/configuration.nix` -- those are real `catppuccin/nix`
+module options, so waybar/fuzzel/swaylock/cursors/starship's base
+integration all picked up lavender automatically. Everything *without* a
+module had to be hand-edited individually, confirmed by grepping the repo
+for the literal old hex (`fe640b`) rather than trusting memory of where
+it was used:
+
+- `home/dotfiles/niri/config.kdl` -- border `active-color`
+- `home/wlogout.nix` -- button hover/active background + border
+- `home/dotfiles/swaync/style.css` -- four hardcoded occurrences
+- `home/santi.nix` -- wob's `bar_color`, and the GTK theme (both the
+  `catppuccin-latte-<accent>-standard` name string *and* the
+  `catppuccin-gtk.override { accents = [ ... ]; }` package build --
+  these have to move together or the theme name and the actual built
+  package silently mismatch)
+- `hosts/legion-laptop/configuration.nix` -- `XCURSOR_THEME` env var,
+  Weston's `cursor-theme` ini setting, and the system-level
+  `pkgs.catppuccin-cursors.<flavor><Accent>` package for SDDM's greeter
+  (three separate places, all needing the same string in sync -- same
+  class of split as the GTK theme name/package pair above)
+- `~/.config/blender/.../interface_theme/` -- outside Nix entirely;
+  swapped the installed XML for Dalibor-P/blender's `latte_lavender.xml`
+  at the time (re-validated as real XML + spot-checked its
+  `widget_text_cursor` hex matches lavender's `#7287fd` exactly, same
+  verification approach as the original peach install). **Superseded --
+  see "Dropped Blender theming" below**: this file also turned out to be
+  missing several `ThemeUserInterface` panel-color attributes (targets
+  "Blender 3.5+", several major versions behind the 5.2.0 actually
+  installed), which is what caused the follow-up "too much dark"
+  reports. Rather than keep chasing third-party-theme version drift for
+  an app with no real `catppuccin/nix` module, Blender was dropped from
+  the accent system entirely and reset to its own stock "Blender Light"
+  theme -- the one item in this list that's no longer accent-linked.
+- `home/santi.nix`'s starship `directory` style (`"bold peach"` ->
+  `"bold lavender"`) -- included even though this isn't literally "the
+  accent" (starship's `git_branch`/`git_status`/`character` intentionally
+  stay mauve/red/green, a separate multi-color scheme, not accent-linked)
+  because `directory` specifically *was* shadowing the global accent and
+  leaving it on the old color would've read as a miss, not a choice.
+
+New package attribute names (`catppuccin-cursors.latteLavender`,
+`catppuccin-gtk.override { accents = [ "lavender" ]; }`) and the exact
+resulting theme-folder strings weren't assumed from the peach naming
+pattern -- each was actually built and its `share/icons`/`share/themes`
+output listed to confirm the real string
+(`catppuccin-latte-lavender-cursors`, `catppuccin-latte-lavender-standard`)
+before typing it into any hand-rolled spot, same rigor as the original
+peach-era comments already in this file describe.
+
+Verified for real: built the actual `home-manager-generation` output
+(not just `nix flake check`) and read back the generated
+`gtk-3.0/settings.ini`, `wob/wob.ini`, `starship.toml`, and the resolved
+cursor package's `share/icons/` folder name straight out of the built
+profile -- all read back as lavender, not just the source Nix expressions
+before the build. Did not verify the system-level half (SDDM
+greeter/Weston cursor, GTK login theme) with a real build --
+`system.build.toplevel` wasn't built here (heavy, and nothing
+hardware/boot-related changed), so that path is eval-verified only via
+`nix flake check`, not build-verified. A live `nrs` + re-login is owed to
+confirm the whole desktop (and the greeter specifically) end-to-end.
+
+## Dropped Blender theming -- stock "Blender Light" instead
+
+Blender's Catppuccin theme (peach, then lavender, then a hand-patch for
+missing panel-color attributes -- see above) turned out to be the one
+app in the whole accent system with no real `catppuccin/nix` module and
+no well-maintained current-version community theme, meaning every
+accent change meant re-downloading and occasionally hand-patching a
+third-party XML by hand. Decided the maintenance cost wasn't worth it
+for one app -- removed the installed file
+(`~/.config/blender/5.2/scripts/presets/interface_theme/`, now empty)
+and switched to Blender's own bundled "Blender Light" preset instead.
+Zero maintenance, ships with Blender itself, can't drift on a version
+bump. Blender is now the one app in this setup that doesn't track
+`catppuccin.accent` -- everything else (waybar/fuzzel/swaylock/cursors
+via real modules; niri/wlogout/swaync/wob/GTK/SDDM by hand) still does.
+
+## Discord Krisp doesn't work on NixOS -- system-level RNNoise instead
+
+Root cause tracked down concretely rather than assumed: built
+`nixpkgs#discord` and confirmed the `discord_krisp.node` module and its
+`.kef` model weights genuinely ship in the package (not stripped at
+build time). The actual problem is Krisp's own DRM-style integrity
+check against the Discord binary -- nixpkgs patches that binary's
+RPATH/interpreter for NixOS's non-FHS layout (standard for every
+Electron app packaged here), and Krisp's check fails once the binary's
+been modified, so it silently declines to load rather than erroring.
+Confirmed against real, current sources rather than folk knowledge: the
+NixOS wiki's Discord page states this outright, and
+[nixpkgs#195512](https://github.com/NixOS/nixpkgs/issues/195512) (open,
+unresolved, no maintainer fix) shows Flatpak's Discord -- the genuine
+unpatched upstream binary -- loading Krisp's weight files fine, which
+is what confirms the patching itself as the cause rather than something
+Krisp-specific to this machine.
+
+Two real options considered: switch to Flatpak's Discord (real Krisp,
+but means standing up Flatpak infrastructure that doesn't exist on this
+system yet, and an imperative non-Nix install step), or filter the mic
+at the PipeWire level instead so it's not dependent on Discord/Krisp at
+all. Went with the PipeWire route -- `services.easyeffects` in
+`home/santi.nix`, using home-manager's real module (confirmed by
+reading the module source directly, not assumed) rather than hand-
+rolling GTK config: `extraPresets` declares an `rnnoise#0` mic filter
+preset, `preset = "rnnoise-mic"` auto-loads it, and the module autostarts
+the daemon via a `graphical-session.target` systemd user service --
+no manual EasyEffects GUI setup needed. Required
+`programs.dconf.enable = true;` at the system level
+(`hosts/legion-laptop/configuration.nix`) as a companion -- the module's
+own docs call out that the daemon won't persist state correctly without
+it, and this system didn't have dconf enabled at all before now.
+
+Upside beyond just fixing Discord: this filters the mic for every app
+(browser calls, OBS, anything), not just Discord, and doesn't depend on
+nixpkgs or Discord ever resolving the Krisp bug. Downside: it's RNNoise,
+not Discord's actual Krisp model -- a different (if generally
+well-regarded) noise-suppression engine, not a like-for-like swap.
+
+Verified for real: built the actual `home-manager-generation` output and
+read back both the generated preset
+(`~/.local/share/easyeffects/input/rnnoise-mic.json` -- confirmed the
+`rnnoise#0` plugin config landed exactly as declared) and the generated
+systemd unit (`~/.config/systemd/user/easyeffects.service` -- confirmed
+`ExecStart` uses `--hide-window --service-mode --load-preset
+rnnoise-mic`, the correct flags for this system's easyeffects 8.2.8;
+older versions need a different `--gapplication-service` flag the
+module branches on). Not verified: that RNNoise actually lands on
+Discord's Input Device dropdown and sounds good in a real call -- that
+needs a live session and is explicitly a manual, non-Nix step (PipeWire
+device selection is runtime state, not persisted config) still owed
+after the next `nrs`.
+
+## EasyEffects preset updated: DeepFilterNet added alongside RNNoise, folded back from live state
+
+RNNoise alone rendered as an empty/broken panel in EasyEffects 8.2.8's
+GUI -- confirmed as a real app bug, not a config problem: the running
+service's own logs showed repeated QML errors ("Created graphical
+object was not placed in the graphics scene") right around when the
+window opened. Manually adding a second plugin, DeepFilterNet ("Deep
+Noise Remover" in the GUI -- a newer ML-based noise-suppression model
+EasyEffects also bundles), through the app itself is what got the panel
+actually rendering and the mic audibly processing.
+
+That live change lived only in `~/.config/easyeffects/db/` (EasyEffects
+8.x uses GSettings' keyfile backend, not dconf proper, despite the
+module's own doc comment about needing dconf -- confirmed by finding
+zero dconf entries anywhere for it and locating the real state at
+`~/.config/easyeffects/db/easyeffectsrc`/`deepfilternetrc` instead) --
+meaning the next service restart's `--load-preset` would have silently
+reverted it back to RNNoise-only. Folded it back into
+`services.easyeffects.extraPresets` in `home/santi.nix`
+(renamed the preset `rnnoise-mic` -> `mic-denoise`, since it's no longer
+just RNNoise) so it survives a rebuild instead of only existing as
+manually-poked runtime state.
+
+Read the real live values rather than guessing at DeepFilterNet's
+schema: `deepfilternetrc` showed exactly one non-default key,
+`postFilterBeta=0.02` (its live, camelCase/GSettings form). Cross-
+checked against the installed easyeffects binary's own strings to
+confirm `post-filter-beta` is genuinely the matching preset-JSON key
+(found both forms embedded together, e.g.
+`_ZN15DbDeepFilterNet17setPostFilterBetaEd` next to the literal string
+`post-filter-beta`) rather than assuming the camelCase-to-kebab-case
+pattern held without checking. DeepFilterNet's other parameters
+(`attenuation-limit`, the processing-threshold/buffer settings --
+enumerated the same way, via `_ZN15DbDeepFilterNet<N>set...` symbols in
+the binary) were left out of the preset entirely rather than given
+invented values, since they were never touched live and still sit at
+schema defaults there.
+
+Verified for real: built the actual `home-manager-generation` output
+and read back the generated
+`~/.local/share/easyeffects/input/mic-denoise.json` -- matches the live
+config's `plugins_order`/per-plugin values exactly. Still not verified:
+whether the panel renders correctly and the effect chain sounds right
+after the *next* full service restart with this exact preset (as
+opposed to the hand-assembled live state checked against) -- that's a
+live-session check still owed alongside the others noted above.
+
+## Spotify themed via spicetify-nix + catppuccin/spicetify (official theme, unlike Blender's)
+
+New flake input: `spicetify-nix` (`github:Gerg-L/spicetify-nix`, `nixpkgs`
+followed). Chose it over hand-driving `spicetify-cli` imperatively
+because it wraps the actual Spotify package with the theme baked in at
+build time -- no "re-run `spicetify apply` after every Spotify update"
+maintenance loop, which is exactly the kind of ongoing-upkeep tax that
+made the Blender Catppuccin theme not worth it (see "Dropped Blender
+theming" above). Confirmed this isn't an orphaned side-project before
+depending on it: `spicetify-cli` in nixpkgs itself lists `gerg-l` as a
+co-maintainer alongside the original author, same person.
+
+Wiring: `flake.nix` adds the input and threads it into
+`home-manager.sharedModules` (`spicetify-nix.homeManagerModules.spicetify`)
+alongside the existing `catppuccin.homeModules.catppuccin`. Also added
+`home-manager.extraSpecialArgs = { inherit inputs; };` -- `specialArgs`
+on the `nixosSystem` call only reaches NixOS-level modules; home-manager's
+user config (`home/santi.nix`, loaded via plain `import`, not as a
+NixOS module) needed its own path to reach
+`inputs.spicetify-nix.legacyPackages` for the theme set. `home/santi.nix`
+now takes `inputs` as a module arg accordingly.
+
+`programs.spicetify = { theme = spicePkgs.themes.catppuccin; colorScheme
+= "latte"; }` -- confirmed both the theme (`catppuccin`) and
+`colorScheme` (`frappe`/`latte`/`macchiato`/`mocha`) values by reading
+the real `catppuccin/spicetify` README rather than guessing accent-style
+naming from the desktop-wide `catppuccin.accent` convention used
+elsewhere in this repo. No accent-color option exists in either the
+theme or the spicetify-nix module (checked `modules/options.nix`
+directly) -- Catppuccin's theme provides the palette, but Spotify's own
+native settings page is where the actual accent gets picked, a manual
+one-time step same class as EasyEffects' input-device selection.
+
+Removed plain `spotify` from `home.packages` -- spicetify-nix's module
+provides its own wrapped Spotify build, and the module's own docs
+explicitly warn against installing both (would double up the `spotify`
+binary in the profile, same class of buildEnv collision noted elsewhere
+in this file).
+
+Verified for real: built the actual `home-manager-generation` output --
+it genuinely fetched and built `catppuccin/spicetify`
+(`spicetify-catppuccin.drv`), not just evaluated the config. Confirmed
+the resulting package is really named `spicetify-catppuccin` (the theme
+choice reflected in the derivation name itself) and that
+`share/spotify/Apps` exists in the built output (the patched/injected
+assets, proof the theme actually got baked in rather than silently
+skipped). Flagged, not fixed: the built package's own
+`spotify.desktop` declares `StartupWMClass=spotify` (lowercase), while
+`niri/config.kdl`'s existing workspace-pinning rule matches
+`app-id="^Spotify$"` (capitalized) -- Electron apps set their real
+runtime app-id in code, which may not match the static desktop-file
+hint, so this might still work exactly as before (same underlying
+Spotify binary, just wrapped) or might silently stop pinning to
+workspace `w0`. Not touched pre-emptively since guessing wrong here
+would trade a possibly-nonexistent problem for a real one -- needs
+checking live, alongside the other end-to-end items already queued for
+next login.

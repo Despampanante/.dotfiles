@@ -43,8 +43,7 @@ let
 
     clock = {
       interval = 10;
-      "format-alt" = " {:%e %b %Y}";
-      format = "{:%H:%M}";
+      format = "{:%H:%M  %e %b %Y}";
       "tooltip-format" = "{:%e %B %Y}";
     };
 

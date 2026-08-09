@@ -24,6 +24,30 @@ input {
     }
 }
 
+// Physical layout, left to right: Samsung LS27A600U (DP-2) -- GIGABYTE M27Q
+// (HDMI-A-1, the main/center monitor) -- laptop panel (eDP-2) on the right.
+// Positions are logical (scale-adjusted) pixels, so each monitor's x is the
+// sum of the widths of everything to its left. HDMI-A-1 is pinned to its
+// 144Hz mode explicitly -- niri's EDID-preferred mode for that panel is
+// only 60Hz.
+output "DP-2" {
+    position x=0 y=0
+}
+
+// focus-at-startup: without this, niri focuses whichever output sorts
+// first by name (alphabetical among DP-2/HDMI-A-1/eDP-2), which landed on
+// the laptop panel -- not this monitor -- and made everything spawned at
+// login (fuzzel, the window-switcher) pop up there instead of here.
+output "HDMI-A-1" {
+    position x=2560 y=0
+    mode "2560x1440@143.856"
+    focus-at-startup
+}
+
+output "eDP-2" {
+    position x=5120 y=0
+}
+
 layout {
     gaps 12
     center-focused-column "never"
@@ -39,46 +63,24 @@ layout {
 
     border {
         width 2
-        active-color "#fe640b"
+        active-color "#7287fd"
         inactive-color "#acb0be"
     }
 }
 
 prefer-no-csd
 
-// Named/static workspaces -- unlike the plain numbered slots below (which
-// are fully dynamic and get garbage-collected when emptied, so what
-// "position 3" means can drift), a declared `workspace "name"` always
-// exists at a fixed spot even with no windows on it. Named "w1".."w0"
-// rather than bare "1".."0": confirmed live (`niri msg action
-// focus-workspace "1"` then checking `niri msg workspaces`) that a plain
-// digit string is resolved as a *positional index*, not looked up by
-// name, regardless of any workspace actually named that -- so bare-digit
-// names silently defeated the entire point of this block (every bind
-// below was still following raw position, not the named workspace).
-// The "w" prefix makes the string unparseable as an index, forcing an
-// actual name lookup. Corresponds to the digits picked as easiest to
-// reach on the keyboard (123 7890, skipping the 456 row); 4/5 included
-// too so every digit in binds below addresses a workspace by name
-// consistently rather than a mix of named and positional.
+// No named/static workspaces here on purpose -- a declared `workspace
+// "name"` always resolves to one specific, fixed output (see
+// `open-on-output` in niri's docs), which is the opposite of what's
+// wanted: Mod+1..0 below use bare digit strings, which niri resolves as
+// *positional* indices on whichever output currently has focus, so the
+// same keybind reaches a different, monitor-local workspace depending on
+// where you are. The tradeoff is that jumping straight to an index that
+// output hasn't grown to yet (e.g. Mod+5 on a monitor that's only ever
+// had 2 workspaces) is a no-op -- Mod+D/Mod+U below grow the stack one
+// at a time if that happens.
 //
-// On-screen left-to-right/top-to-bottom order is a separate question from
-// this list's declaration order -- unclear from testing tonight whether
-// it's driven by declaration order at all, since a prior attempt at
-// reordering this block produced no visible change on an already-running
-// session. Left in plain ascending order here; revisit the *display*
-// order (not the keybind correctness, which this fix covers) after a
-// full logout confirms whether it needs its own fix.
-workspace "w1"
-workspace "w2"
-workspace "w3"
-workspace "w4"
-workspace "w5"
-workspace "w7"
-workspace "w8"
-workspace "w9"
-workspace "w0"
-
 // No `match` -- applies to every window. Confirmed live that this was
 // actually needed: spawning a new window pinned to a different (not
 // currently visible) workspace left focus on whatever was already
@@ -108,32 +110,6 @@ window-rule {
     clip-to-geometry true
 }
 
-// Pins each app to its workspace regardless of how the window was
-// created -- covers both the spawn-at-startup launches below and any
-// later manual launch (e.g. via fuzzel). If the named workspace above
-// didn't exist, this would silently fall back to opening on whatever's
-// currently focused -- see DECISIONS.md.
-window-rule {
-    match app-id=r#"^org\.wezfurlong\.wezterm$"#
-    open-on-workspace "w1"
-}
-window-rule {
-    match app-id="^google-chrome$"
-    open-on-workspace "w2"
-}
-window-rule {
-    match app-id="^discord$"
-    open-on-workspace "w9"
-}
-window-rule {
-    match app-id="^Spotify$"
-    open-on-workspace "w0"
-}
-window-rule {
-    match app-id=r#"^md\.Obsidian$"#
-    open-on-workspace "w8"
-}
-
 // Niri has no built-in Xwayland support (unlike sway, which gets it for
 // free from wlroots) -- without this, X11-only apps just fail to open
 // under a niri session. xwayland-satellite bridges the gap; it sets
@@ -156,10 +132,11 @@ spawn-at-startup "nm-applet" "--indicator"
 // all, so this agent was silently never running before.
 spawn-at-startup "polkit-agent-wrapper"
 
-// Auto-launched at login instead of by hand -- lands on their pinned
-// workspace via the window-rules above regardless of launch order/timing.
-// Not wezterm: a terminal auto-spawning every login isn't wanted, unlike
-// these four which are meant to just always be running in the background.
+// Auto-launched at login instead of by hand -- no workspace pinning, so
+// these just land wherever's focused when they spawn (HDMI-A-1, via
+// focus-at-startup above). Not the terminal: a terminal auto-spawning
+// every login isn't wanted, unlike these four which are meant to just
+// always be running in the background.
 spawn-at-startup "discord"
 spawn-at-startup "spotify"
 spawn-at-startup "google-chrome"
@@ -188,8 +165,8 @@ spawn-at-startup "swayidle" "-w" \
 spawn-sh-at-startup "mkfifo -m 600 \"$XDG_RUNTIME_DIR/wob.sock\" 2>/dev/null; tail -f \"$XDG_RUNTIME_DIR/wob.sock\" | wob"
 
 binds {
-    Mod+Return { spawn "wezterm"; }
-    Mod+D { spawn "fuzzel"; }
+    Mod+Return { spawn "ghostty"; }
+    Mod+Space { spawn "fuzzel"; }
     Mod+Tab { spawn "/home/santi/.config/scripts/window-switcher.sh"; }
     Mod+Q { close-window; }
     Mod+Shift+E { quit; }
@@ -206,37 +183,65 @@ binds {
     Mod+Shift+J { move-window-down; }
     Mod+Shift+K { move-window-up; }
 
-    // Quoted -- these address the named/static workspaces declared above
-    // by name, not position, so they can't drift even as other, unnamed
-    // dynamic workspaces get created/GC'd around them. 6 was never bound
-    // (not in the "easiest to hit" set) and stays that way.
-    Mod+1 { focus-workspace "w1"; }
-    Mod+2 { focus-workspace "w2"; }
-    Mod+3 { focus-workspace "w3"; }
-    Mod+4 { focus-workspace "w4"; }
-    Mod+5 { focus-workspace "w5"; }
-    Mod+7 { focus-workspace "w7"; }
-    Mod+8 { focus-workspace "w8"; }
-    Mod+9 { focus-workspace "w9"; }
-    Mod+0 { focus-workspace "w0"; }
-    Mod+Shift+1 { move-window-to-workspace "w1"; }
-    Mod+Shift+2 { move-window-to-workspace "w2"; }
-    Mod+Shift+3 { move-window-to-workspace "w3"; }
-    Mod+Shift+4 { move-window-to-workspace "w4"; }
-    Mod+Shift+5 { move-window-to-workspace "w5"; }
-    Mod+Shift+7 { move-window-to-workspace "w7"; }
-    Mod+Shift+8 { move-window-to-workspace "w8"; }
-    Mod+Shift+9 { move-window-to-workspace "w9"; }
-    Mod+Shift+0 { move-window-to-workspace "w0"; }
+    // Switch focus between physical monitors -- left/right only since the
+    // three-monitor layout above (see the output blocks near the top) is
+    // horizontal: DP-2 left, HDMI-A-1 center, eDP-2 laptop right. Mod+Ctrl
+    // rather than a bare direction since H/L/J/K are already column/window
+    // focus above.
+    Mod+Ctrl+H { focus-monitor-left; }
+    Mod+Ctrl+L { focus-monitor-right; }
 
-    // Still useful for any *further* overflow beyond the 9 named
-    // workspaces above -- niri keeps exactly one empty dynamic workspace
+    Mod+Ctrl+Shift+H { move-window-to-monitor-left; }
+    Mod+Ctrl+Shift+L { move-window-to-monitor-right; }
+
+    // Bare, *unquoted* numbers -- niri's KDL parser treats a quoted
+    // "1" as a workspace *name* lookup (which fails silently, since
+    // nothing is named that) versus an unquoted 1 as a positional
+    // *index* on whichever monitor currently has focus. Mod+1 on the
+    // laptop and Mod+1 on the center monitor are two different,
+    // monitor-local workspaces. 0 maps to index 10, matching the usual
+    // i3/sway "0 comes after 9" convention.
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+    Mod+0 { focus-workspace 10; }
+    Mod+Shift+1 { move-window-to-workspace 1; }
+    Mod+Shift+2 { move-window-to-workspace 2; }
+    Mod+Shift+3 { move-window-to-workspace 3; }
+    Mod+Shift+4 { move-window-to-workspace 4; }
+    Mod+Shift+5 { move-window-to-workspace 5; }
+    Mod+Shift+6 { move-window-to-workspace 6; }
+    Mod+Shift+7 { move-window-to-workspace 7; }
+    Mod+Shift+8 { move-window-to-workspace 8; }
+    Mod+Shift+9 { move-window-to-workspace 9; }
+    Mod+Shift+0 { move-window-to-workspace 10; }
+
+    // Still useful for reaching indices the current monitor hasn't grown
+    // to yet (the digit binds above are a no-op past the end of that
+    // output's stack) -- niri keeps exactly one empty dynamic workspace
     // at the end of the per-monitor stack; scrolling past it with
     // focus-workspace-down is what grows the list further.
-    Mod+Page_Down { focus-workspace-down; }
-    Mod+Page_Up { focus-workspace-up; }
-    Mod+Shift+Page_Down { move-window-to-workspace-down; }
-    Mod+Shift+Page_Up { move-window-to-workspace-up; }
+    //
+    // Neovim's Ctrl+D/Ctrl+U (half-page down/up) mnemonic, not niri's
+    // default Page_Down/Page_Up -- D/U reads the same "down/up" way
+    // Ctrl+D/Ctrl+U does, and stays on the home row next to the
+    // H/J/K/L column/window nav above instead of a reach to Page_Down.
+    // Freed up by moving fuzzel from Mod+D to Mod+Space (see spawns above).
+    Mod+D { focus-workspace-down; }
+    Mod+U { focus-workspace-up; }
+    Mod+Shift+D { move-window-to-workspace-down; }
+    Mod+Shift+U { move-window-to-workspace-up; }
+
+    // Jump back to whichever workspace you were on before this one, toggling
+    // back and forth on repeat presses -- niri's own default config suggests
+    // Mod+Tab for this, but that's already the quick-switcher here.
+    Mod+Backspace { focus-workspace-previous; }
 
     Mod+F { maximize-column; }
     Mod+Shift+F { fullscreen-window; }
@@ -245,6 +250,18 @@ binds {
 
     Mod+Minus { set-column-width "-10%"; }
     Mod+Equal { set-column-width "+10%"; }
+
+    // Tabs: stack windows into one column, then show that column as a real
+    // tab bar instead of a vertical split. Same keys as niri's own default
+    // config, not invented -- consume/expel move a window in and out of the
+    // focused column; the bracket binds are the "smart" bidirectional
+    // versions (consume from that side if alone, expel that way if already
+    // grouped) so you often only need one hand for the whole workflow.
+    Mod+BracketLeft { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
+    Mod+Comma { consume-window-into-column; }
+    Mod+Period { expel-window-from-column; }
+    Mod+W { toggle-column-tabbed-display; }
 
     XF86AudioRaiseVolume allow-when-locked=true { spawn "/home/santi/.config/scripts/wob-volume.sh" "up"; }
     XF86AudioLowerVolume allow-when-locked=true { spawn "/home/santi/.config/scripts/wob-volume.sh" "down"; }

@@ -4,9 +4,11 @@
 # dotfiles rather than rewritten into home-manager's structured options, so
 # they stay usable as-is on Windows too (via chezmoi, per that repo's setup).
 
-{ config, pkgs, ... }:
+{ config, pkgs, inputs, ... }:
 
 let
+  spicePkgs = inputs.spicetify-nix.legacyPackages.${pkgs.stdenv.system};
+
   # A small stable-named wrapper for the polkit authentication agent --
   # niri/config.kdl spawns it at startup (see that file), but the real
   # binary lives under a /nix/store/<hash>-polkit-gnome-.../libexec path
@@ -34,6 +36,40 @@ let
     rev = "e261deb1b47614eed3400089ce7197dc68acc4eb";
     sha256 = "1c4s1maismj0l297vhnxkc309mcn4936q7z4j7jhaqc9vij984m1";
   };
+
+  # Blender wrapped through `nvidia-offload` (the command legion-laptop's
+  # `hardware.nvidia.prime.offload.enableOffloadCmd` puts on PATH -- see
+  # configuration.nix): this hybrid-graphics laptop otherwise runs GUI apps
+  # on the AMD iGPU by default, which leaves Cycles GPU rendering
+  # (CUDA/OptiX) unused on the RTX dGPU. Calls the real binary by store
+  # path rather than by name off PATH, so this wrapper doesn't need plain
+  # `blender` installed alongside it too. Ships its own
+  # `share/applications` + `share/icons` (copied straight from the real
+  # blender package, not hand-rolled) so it shows up in fuzzel as a normal
+  # "Blender" launcher rather than a bare `blender` binary with no icon.
+  blenderOffload =
+    let
+      wrapped = pkgs.writeShellScriptBin "blender" ''
+        exec nvidia-offload "${pkgs.blender}/bin/blender" "$@"
+      '';
+      desktop = pkgs.makeDesktopItem {
+        name = "blender";
+        desktopName = "Blender";
+        comment = "3D creation suite (NVIDIA dGPU offload)";
+        exec = "blender %f";
+        icon = "blender";
+        terminal = false;
+        categories = [ "Graphics" ];
+      };
+      icons = pkgs.runCommand "blender-icons" { } ''
+        mkdir -p $out/share
+        cp -r ${pkgs.blender}/share/icons $out/share/icons
+      '';
+    in
+    pkgs.symlinkJoin {
+      name = "blender-offload";
+      paths = [ wrapped desktop icons ];
+    };
 in
 {
   home.username = "santi";
@@ -83,8 +119,11 @@ in
     nix-direnv.enable = true;
   };
 
-  # Prompt. Colors reference catppuccin/nix's generated palette (peach/mauve/
-  # red/green — see DECISIONS.md), merged in via catppuccin.starship below.
+  # Prompt. Colors reference catppuccin/nix's generated palette (lavender/
+  # mauve/red/green — see DECISIONS.md), merged in via catppuccin.starship
+  # below. `directory` specifically tracks the global accent (lavender) --
+  # git_branch/git_status/character stay mauve/red/green regardless of
+  # accent, a separate deliberate multi-color choice, not accent-linked.
   # enableZshIntegration defaults to true, so this hooks into programs.zsh
   # above automatically.
   programs.starship = {
@@ -94,7 +133,7 @@ in
       format = "$directory$git_branch$git_status$character";
 
       directory = {
-        style = "bold peach";
+        style = "bold lavender";
         truncation_length = 3;
         truncate_to_repo = true;
       };
@@ -137,7 +176,7 @@ in
     vim
     neovim
     wget
-    wezterm
+    ghostty
 
     python3
     python3Packages.pip
@@ -176,7 +215,7 @@ in
     libnotify
     xwayland-satellite # niri's Xwayland bridge -- see niri/config.kdl's
                         # spawn-at-startup.
-    # catppuccin-cursors.lattePeach deliberately NOT listed here even though
+    # catppuccin-cursors.latteLavender deliberately NOT listed here even though
     # it was in the old system package list -- catppuccin.cursors.enable
     # below already provides its own copy via home.pointerCursor.package,
     # and listing it again caused a real buildEnv conflict (two different
@@ -190,7 +229,10 @@ in
     google-chrome
     discord
     obsidian
-    spotify
+    parsec-bin
+
+    godot
+    blenderOffload
   ];
 
   home.file.".local/bin/tmux-sessionizer" = {
@@ -217,18 +259,19 @@ in
     settings = {
       main = {
         # "Iosevka Nerd Font" (no suffix) is Iosevka's default
-        # quasi-proportional build -- WezTerm forces it into a monospace
-        # terminal grid so it reads as fixed-width there, but fuzzel
-        # renders it as a normal text label using its own metrics, which
-        # looked visually different from the terminal. "Mono" is the
-        # actual fixed-width cut -- see DECISIONS.md. Size matched to
-        # WezTerm's font_size (16) too -- fuzzel was still on its
-        # original size=11, small enough next to the terminal's 16 that
-        # the *same* monospace font read as a different one at a glance.
+        # quasi-proportional build -- the terminal (ghostty, formerly
+        # WezTerm) forces it into a monospace terminal grid so it reads
+        # as fixed-width there, but fuzzel renders it as a normal text
+        # label using its own metrics, which looked visually different
+        # from the terminal. "Mono" is the actual fixed-width cut -- see
+        # DECISIONS.md. Size matched to the terminal's font-size (16)
+        # too -- fuzzel was still on its original size=11, small enough
+        # next to the terminal's 16 that the *same* monospace font read
+        # as a different one at a glance.
         font = "Iosevka Nerd Font Mono:size=16";
         prompt = "❯";
         icon-theme = "Adwaita";
-        terminal = "wezterm";
+        terminal = "ghostty";
         layer = "overlay";
       };
       border = {
@@ -247,6 +290,25 @@ in
       font-size = 20;
       indicator-radius = 115;
     };
+  };
+
+  # Spotify, themed via spicetify-nix (flake input) + catppuccin/spicetify
+  # (the official Catppuccin org theme, not a third-party file like the
+  # Blender one that turned out to be more trouble than it was worth --
+  # see DECISIONS.md). Wraps the actual Spotify package with the theme
+  # baked in at build time rather than the traditional spicetify-cli
+  # "patch the installed app, re-run after every update" flow, so this
+  # replaces the plain `spotify` package above rather than sitting
+  # alongside it -- installing both would just double up the binary.
+  # No `accentColor` option here: Catppuccin's theme provides the palette,
+  # but the actual accent is picked from Spotify's own native settings
+  # page (a small built-in feature, not something spicetify-nix exposes)
+  # -- a manual one-time step, same class of thing as EasyEffects' input
+  # device selection.
+  programs.spicetify = {
+    enable = true;
+    theme = spicePkgs.themes.catppuccin;
+    colorScheme = "latte";
   };
 
   # wob: on-screen volume/brightness popup. No catppuccin.nix module for it,
@@ -271,9 +333,75 @@ in
         margin = 48;
         border_color = "acb0beff";
         background_color = "e6e9efff";
-        bar_color = "fe640bff";
+        bar_color = "7287fdff";
       };
       "style.muted".bar_color = "d20f39ff";
+    };
+  };
+
+  # System-level noise suppression via PipeWire (RNNoise), not Discord's
+  # own Krisp -- Krisp is broken on NixOS specifically: nixpkgs patches
+  # the Discord binary (RPATH/interpreter rewriting, standard for every
+  # Electron app here since there's no FHS /usr/lib), and Krisp does a
+  # DRM-style integrity check against that binary which fails once it's
+  # patched, so it silently declines to load (see DECISIONS.md; tracked
+  # upstream, unresolved: https://github.com/NixOS/nixpkgs/issues/195512).
+  # Filtering the mic at the PipeWire level sidesteps Discord/Krisp
+  # entirely and benefits every app (calls in the browser, OBS, etc.),
+  # not just Discord. `programs.dconf.enable` (configuration.nix) is a
+  # required system-level companion -- the daemon needs it to persist
+  # state, called out explicitly in the module's own docs.
+  #
+  # Still needs one manual, per-app step after rebuilding: in each app
+  # (Discord's Voice & Video settings, etc.), pick the EasyEffects-
+  # processed source as the input device -- PipeWire routing is runtime
+  # state, not something Nix can set once and have it stick.
+  #
+  # `deepfilternet#0` alongside rnnoise was added live, through the app
+  # itself, not originally declared here -- RNNoise alone rendered as
+  # empty/broken in EasyEffects 8.2.8's GUI (a real QML bug in this
+  # version's PageStreamsEffects panel, confirmed via its own service
+  # logs -- "Created graphical object was not placed in the graphics
+  # scene"), and adding DeepFilterNet (a second, newer ML-based
+  # noise-suppression plugin EasyEffects also bundles) alongside it is
+  # what actually got the panel rendering and processing visibly
+  # working. Folded back into this preset (rather than left as
+  # untracked live state in ~/.config/easyeffects/db/) so a rebuild's
+  # `--load-preset` doesn't silently wipe it back out to rnnoise-only.
+  # `post-filter-beta = 0.02` is the one DeepFilterNet value that ended
+  # up non-default live (confirmed by reading the real
+  # ~/.config/easyeffects/db/deepfilternetrc, and cross-checking the
+  # camelCase live key `postFilterBeta` against the installed binary's
+  # own strings to confirm `post-filter-beta` is really the matching
+  # preset-JSON key, not assumed) -- its other parameters
+  # (attenuation-limit, the processing-threshold/buffer settings) are
+  # left unset here since they were never touched and still sit at
+  # schema defaults live.
+  services.easyeffects = {
+    enable = true;
+    preset = "mic-denoise";
+    extraPresets = {
+      mic-denoise = {
+        input = {
+          "plugins_order" = [ "rnnoise#0" "deepfilternet#0" ];
+          "rnnoise#0" = {
+            bypass = false;
+            "enable-vad" = false;
+            "input-gain" = 0.0;
+            "model-path" = "";
+            "output-gain" = 0.0;
+            release = 20.0;
+            "vad-thres" = 50.0;
+            wet = 0.0;
+          };
+          "deepfilternet#0" = {
+            bypass = false;
+            "input-gain" = 0.0;
+            "output-gain" = 0.0;
+            "post-filter-beta" = 0.02;
+          };
+        };
+      };
     };
   };
 
@@ -286,7 +414,7 @@ in
     enable = true;
     autoEnable = false;
     flavor = "latte";
-    accent = "peach";
+    accent = "lavender";
 
     fuzzel.enable = true;
     swaylock.enable = true;
@@ -306,9 +434,9 @@ in
   # Catppuccin. catppuccin/gtk is a separate upstream project, packaged in
   # nixpkgs as catppuccin-gtk.
   gtk.theme = {
-    name = "catppuccin-latte-peach-standard";
+    name = "catppuccin-latte-lavender-standard";
     package = pkgs.catppuccin-gtk.override {
-      accents = [ "peach" ];
+      accents = [ "lavender" ];
       variant = "latte";
     };
   };
@@ -324,7 +452,7 @@ in
     # to live alongside the Nix-managed tpm symlink (home.file above),
     # same reasoning as the earlier waybar/fuzzel/swaylock restructuring.
     "tmux/tmux.conf".source = ./dotfiles/tmux/tmux.conf;
-    "wezterm".source = ./dotfiles/wezterm;
+    "ghostty".source = ./dotfiles/ghostty;
     "niri".source = ./dotfiles/niri;
     "swaync".source = ./dotfiles/swaync;
     "scripts".source = ./dotfiles/scripts;

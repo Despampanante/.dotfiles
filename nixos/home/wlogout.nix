@@ -75,8 +75,8 @@
       button:focus,
       button:active,
       button:hover {
-        background-color: #fe640b; /* peach */
-        border-color: #fe640b;
+        background-color: #7287fd; /* lavender */
+        border-color: #7287fd;
         outline-style: none;
       }
 

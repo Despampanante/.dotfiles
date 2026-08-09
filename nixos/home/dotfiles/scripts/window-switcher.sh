@@ -10,7 +10,7 @@
 # line), confirmed via `man fuzzel`. Uses the window's own app-id directly
 # as the icon name rather than a hardcoded per-app mapping -- most icon
 # themes name their icon after the same string used as the desktop/app id
-# (confirmed for wezterm/chrome/discord/steam), and fuzzel just silently
+# (confirmed for ghostty/chrome/discord/steam), and fuzzel just silently
 # shows no icon if a name doesn't resolve, so this doesn't need to be more
 # elaborate than that. Not --dmenu0 -- the man page says icons aren't
 # supported in that mode.

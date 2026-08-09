@@ -1,0 +1,17 @@
+# Replaces wezterm on the Linux side (see DECISIONS.md): wezterm's LEADER
+# was bound to Ctrl-b, the same chord as tmux's default prefix, and being
+# a terminal-emulator-level binding it intercepted the key before tmux
+# (running inside it) ever saw it -- silently eating tmux commands whenever
+# a wezterm-native binding shadowed one. Ghostty has no built-in
+# leader/multiplexer concept to collide with tmux in the first place, so
+# there's nothing here to mirror from the old wezterm.lua beyond cosmetics.
+# Windows keeps wezterm untouched (windows/dot_config/wezterm) -- tmux
+# doesn't run there, so there's no nesting/collision risk to design around.
+
+theme = Catppuccin Latte
+font-family = Iosevka Nerd Font
+font-size = 16
+
+# niri has prefer-no-csd set and no server-side decorations at all -- same
+# reasoning as wezterm's config.window_decorations = "NONE".
+window-decoration = false
