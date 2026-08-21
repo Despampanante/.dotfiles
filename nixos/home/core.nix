@@ -143,6 +143,7 @@ in
     ripgrep
     tmux
     claude-code
+    codex
     jq
 
     gh
@@ -189,5 +190,6 @@ in
     # santi.nix's fuzzel/swaylock restructuring (see DECISIONS.md).
     "tmux/tmux.conf".source = ./dotfiles/tmux/tmux.conf;
     "tmux-sessionizer".source = ./dotfiles/tmux-sessionizer;
+    "opensessions/config.json".source = ./dotfiles/opensessions/config.json;
   };
 }
