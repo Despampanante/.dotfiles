@@ -116,15 +116,9 @@
 
   programs.steam = {
     enable = true;
-    remotePlay.openFirewall = true;
-    localNetworkGameTransfers.openFirewall = true;
 
-    # Runs every game (and the Steam client itself) on the NVIDIA dGPU via
-    # PRIME render offload, instead of the AMD iGPU games otherwise land on
-    # by default -- see hardware.nvidia below for why. `extraEnv` exports
-    # into the FHS env's shell profile, so every child process Steam
-    # launches inherits it, no per-game Launch Options needed. Values match
-    # the `nvidia-offload` wrapper (prime.offload.enableOffloadCmd below).
+    # Run Steam and its games on the NVIDIA dGPU via PRIME render offload.
+    # These values match the nvidia-offload wrapper configured below.
     package = pkgs.steam.override {
       extraEnv = {
         __NV_PRIME_RENDER_OFFLOAD = "1";
@@ -136,6 +130,14 @@
   };
 
   programs.niri.enable = true;
+
+  # Force Chrome's web notifications through the standard Linux desktop
+  # notification service (org.freedesktop.Notifications), which DMS owns.
+  # Without this policy Chrome can fall back to its internal message center,
+  # whose blank Wayland toplevels niri treats as ordinary tiled windows.
+  environment.etc."opt/chrome/policies/managed/system-notifications.json".text =
+    builtins.toJSON { AllowSystemNotifications = true; };
+
   # Sway was tried as a second session (back after being dropped in
   # 6396fd9) and then torn back down -- decided to just stick with niri.
   # See git history around home/dotfiles/sway for the removed config if
@@ -156,11 +158,17 @@
     # Real binary name, wherever it differs from the window's Wayland
     # app_id -- nirinit defaults to spawning the app_id itself otherwise,
     # which fails silently when they don't match (confirmed live via
-    # `journalctl -u nirinit.service`; see DECISIONS.md).
+    # `journalctl -u nirinit.service`; see DECISIONS.md). Ghostty points at
+    # `ghostty-tmux-attach` (home/santi.nix) rather than plain `ghostty`,
+    # so a restored terminal lands inside tmux instead of a bare shell --
+    # nirinit only ever passes a single bare executable with no arguments,
+    # so the multi-arg `ghostty -e sh -c 'tmux attach || tmux new'` has to
+    # live behind a fixed-name wrapper, same reasoning as the wrapper
+    # itself documents.
     settings.launch = {
       "Spotify" = "spotify";
       "md.Obsidian" = "obsidian";
-      "com.mitchellh.ghostty" = "ghostty";
+      "com.mitchellh.ghostty" = "ghostty-tmux-attach";
     };
   };
 
@@ -245,6 +253,15 @@
     shell = pkgs.zsh;
   };
   programs.zsh.enable = true;
+
+  # Compatibility loader for ordinary dynamically linked Linux binaries.
+  # OpenSessions installs release binaries through TPM; the default nix-ld
+  # library set covers their glibc/libgcc/zlib dependencies, while its bundled
+  # lazydiff binary additionally needs libdbus-1.
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [ dbus ];
+  };
 
   programs.firefox.enable = true;
 

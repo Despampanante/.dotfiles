@@ -1787,3 +1787,54 @@ it back from git history" instead of "uncomment a few lines" -- still
 fully recoverable, just not sitting in the live config as dead weight.
 `swaybg` (still used for the wallpaper) and `fuzzel` (still used by
 `window-switcher.sh`) were not touched -- both have live consumers.
+
+## Restored terminal now auto-attaches tmux; added sticky floating windows
+
+Two small additions once tmux-resurrect/continuum were confirmed working
+end-to-end:
+
+- **nirinit's restored terminal now lands inside tmux.** Setting
+  `services.nirinit.settings.launch."com.mitchellh.ghostty"` to a
+  multi-arg command directly (`ghostty -e sh -c 'tmux attach || tmux
+  new'`) doesn't work -- confirmed by reading both nirinit's source
+  (`vec![launch_command]`, always exactly one Vec element) and niri's own
+  `spawn()` (`command.split_first()`, execs Vec elements directly with no
+  shell involved) -- a string with embedded flags would just fail to exec
+  as one literal, nonexistent binary name. Added `ghosttyTmuxAttach`
+  (`home/santi.nix`), a fixed-name wrapper in the same style as
+  `polkitAgentWrapper`, and pointed nirinit's launch entry at it instead.
+  Manually opening Ghostty (`Mod+Return`) is untouched -- still a plain
+  shell.
+- **Sticky floating windows**, via `niri-float-sticky` (added as a flake
+  input, plain Go package, no NixOS/home-manager module). niri has no
+  native sticky-window concept (niri-wm/niri#678). Spawned with
+  `-disable-auto-stick` rather than its default (auto-stick every
+  floating window) -- the existing `Mod+Shift+Space` ad-hoc float toggle
+  already has a meaning, and silently making every one of those sticky
+  too would change that without asking. `Mod+G` toggles stickiness for
+  the focused window instead, via the daemon's IPC socket.
+
+## Spotify now-playing bar: right-side icons were unthemed, not a dark-mode bug
+
+User reported the bottom player bar was hard to see. Checked the actual
+built theme files (`colors.css`, `spicetify-config.json`) first rather
+than assume a Nix misconfiguration -- `--spice-player`/`--spice-sidebar`
+were correctly baked in as light Latte colors, `scheme_name: "latte"`
+confirmed, ruling out a build-time flavor mixup. Real cause found by
+reading the theme's actual `user.css`: it only has rules for the
+left-hand transport controls (shuffle/play/skip/heart/progress bar) --
+zero coverage for the right-hand icons (volume, queue, connect-device,
+lyrics, fullscreen), which fall back to Spotify's own default icon color
+(tuned for its native black UI) and read as washed-out against Latte's
+light background.
+
+Fixed via `programs.spicetify.enabledSnippets` (spicetify-nix's raw-CSS
+injection point) rather than patching the fetched theme itself -- broad
+`.Root__now-playing-bar button svg`/`[role="slider"] svg` selectors
+using the theme's own `--spice-subtext`/`--spice-text` colors, deliberately
+not the exact (obfuscated, version-specific) class names of each icon,
+since `data-testid`/structural selectors hold up across Spotify updates
+far better than generated class names do. Not visually confirmed live
+yet (no display access to actually screenshot the running app) -- worth
+a check after the next `nrs` in case any icon still needs a more specific
+selector.
