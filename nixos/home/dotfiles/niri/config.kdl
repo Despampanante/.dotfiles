@@ -7,6 +7,14 @@
 // scrollable-column model instead of sway's split/stack model — see
 // DECISIONS.md.
 
+// Work around severe flickering/tearing on NVIDIA-driven outputs by waiting
+// for each frame to complete before niri queues the next one. This matters on
+// this hybrid-GPU setup, where niri renders on AMD and copies frames to the
+// NVIDIA GPU driving both external monitors.
+debug {
+    wait-for-frame-completion-before-queueing
+}
+
 input {
     keyboard {
         xkb {
@@ -127,6 +135,20 @@ window-rule {
     open-floating true
 }
 
+// Chrome's video Picture-in-Picture popout. Confirmed live via `niri msg
+// windows`: unlike Firefox (which sets app-id + title "Picture-in-Picture",
+// the convention niri's own docs example against), Chrome leaves app-id
+// empty and titles it lowercase/no-hyphens "Picture in picture" -- so this
+// matches on title alone rather than the app-id="firefox$" pattern from
+// niri's docs, which wouldn't fire for Chrome at all.
+window-rule {
+    match title="^Picture in picture$"
+    open-floating true
+    default-column-width { fixed 400; }
+    default-window-height { fixed 225; }
+    default-floating-position x=24 y=24 relative-to="top-right"
+}
+
 // Niri has no built-in Xwayland support (unlike sway, which gets it for
 // free from wlroots) -- without this, X11-only apps just fail to open
 // under a niri session. xwayland-satellite bridges the gap; it sets
@@ -138,6 +160,15 @@ spawn-at-startup "xwayland-satellite"
 // "solid bg" approach as the Windows wallpaper) if this ever needs
 // reverting: spawn-at-startup "swaybg" "-c" "#eff1f5"
 spawn-at-startup "swaybg" "-i" "/home/santi/.local/share/wallpaper/catppuccin-latte.png" "-m" "fill"
+
+// Sticky floating windows -- niri has no native concept of this
+// (niri-wm/niri#678). The daemon's default is to auto-stick *every*
+// floating window, which would silently change the meaning of the
+// existing Mod+Shift+Space ad-hoc float toggle below -- so `-title`
+// narrows auto-stick to just the Chrome PiP popout (see the window-rule
+// above; title match, not app-id, since Chrome leaves app-id empty on
+// this window). Everything else stays manual via the Mod+G IPC toggle.
+spawn-at-startup "niri-float-sticky" "-title" "^Picture in picture$"
 
 spawn-at-startup "nm-applet" "--indicator"
 // The real polkit-gnome-authentication-agent-1 binary lives under a
@@ -272,6 +303,11 @@ binds {
     Mod+Shift+F { fullscreen-window; }
     Mod+R { switch-preset-column-width; }
     Mod+Shift+Space { toggle-window-floating; }
+    // Toggles stickiness (visible on every workspace) for the focused
+    // floating window, via niri-float-sticky's IPC socket -- see the
+    // spawn-at-startup comment above for why this is a manual toggle
+    // instead of auto-sticking every float.
+    Mod+G { spawn "niri-float-sticky" "-ipc" "toggle_sticky"; }
 
     Mod+Minus { set-column-width "-10%"; }
     Mod+Equal { set-column-width "+10%"; }

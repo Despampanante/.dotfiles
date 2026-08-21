@@ -1,5 +1,11 @@
-# Home-manager config for santi. Config files under ./dotfiles are pulled
-# (and, where noted in DECISIONS.md, recolored) from
+# Host-specific home-manager config: this laptop's actual desktop (niri,
+# DankMaterialShell, GPU offload wrappers, browser/Discord/etc). The
+# portable shell/git/editor/dev-CLI subset lives in ./core.nix, imported
+# below -- see that file for why the split, and for what's usable standalone
+# (via `homeConfigurations.santi` in flake.nix) on another machine.
+#
+# Config files under ./dotfiles referenced here (and, where noted in
+# DECISIONS.md, recolored) are pulled from
 # https://github.com/Despampanante/.dotfiles — deliberately kept as plain
 # dotfiles rather than rewritten into home-manager's structured options, so
 # they stay usable as-is on Windows too (via chezmoi, per that repo's setup).
@@ -20,28 +26,28 @@ let
   polkitAgentWrapper = pkgs.writeShellScriptBin "polkit-agent-wrapper"
     "exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
 
-  # TPM (tmux plugin manager) itself, fetched declaratively -- discovered
-  # while wiring up catppuccin/tmux that ~/.config/tmux/plugins/ didn't
-  # exist at all (confirmed live), meaning TPM had never actually been
-  # bootstrapped and no tmux plugin has ever loaded, before or after this
-  # change. The usual TPM setup expects a manual `git clone` as a one-time
-  # step; fetching it here instead means it's always present after a
-  # rebuild, no manual bootstrap needed. TPM itself still imperatively
-  # clones whatever plugins are `set -g @plugin`'d (catppuccin/tmux here)
-  # as sibling directories under plugins/ on first run/prefix+I -- that
-  # part isn't Nix-managed, same as any other TPM setup.
-  tpm = pkgs.fetchFromGitHub {
-    owner = "tmux-plugins";
-    repo = "tpm";
-    rev = "e261deb1b47614eed3400089ce7197dc68acc4eb";
-    sha256 = "1c4s1maismj0l297vhnxkc309mcn4936q7z4j7jhaqc9vij984m1";
-  };
+  # Wrapper so nirinit's restore of the terminal (configuration.nix's
+  # services.nirinit.settings.launch) lands inside tmux instead of a bare
+  # shell. nirinit can only ever pass a single bare executable name with no
+  # arguments -- confirmed by reading its source (`vec![launch_command]`,
+  # always one Vec element) and niri's own spawn() (execs Vec elements
+  # directly, no shell involved, so a launch string with embedded flags
+  # would just fail to exec as one literal nonexistent binary name). Same
+  # fixed-name-wrapper pattern as polkitAgentWrapper above, just for a
+  # multi-arg command instead of an unstable store path.
+  ghosttyTmuxAttach = pkgs.writeShellScriptBin "ghostty-tmux-attach"
+    "exec ${pkgs.ghostty}/bin/ghostty -e ${pkgs.bash}/bin/sh -c 'tmux attach || tmux new'";
+
+  # Sticky floating windows for niri -- see niri/config.kdl for the
+  # spawn-at-startup + Mod+G toggle bind. Plain flake package, not a
+  # nixpkgs one.
+  niriFloatSticky = inputs.niri-float-sticky.packages.${pkgs.stdenv.system}.default;
 
   # Catppuccin's official DankMaterialShell theme -- bundles all four
   # flavors (Latte/Frappé/Macchiato/Mocha) in one catppuccin.json, picked
   # inside DMS itself (see xdg.configFile below for where it's placed).
   # Fetched declaratively rather than the upstream "download the file by
-  # hand" instructions, same reasoning as tpm above.
+  # hand" instructions, same reasoning as tpm in core.nix.
   catppuccinDMSTheme = pkgs.fetchFromGitHub {
     owner = "catppuccin";
     repo = "dankmaterialshell";
@@ -84,137 +90,19 @@ let
     };
 in
 {
-  home.username = "santi";
-  home.homeDirectory = "/home/santi";
-  home.stateVersion = "25.05";
+  imports = [ ./core.nix ];
 
-  programs.home-manager.enable = true;
-
-  programs.git = {
-    enable = true;
-    settings.user = {
-      name = "Santi";
-      email = "santiago.depascale@gmail.com";
-    };
-    # Lets `git push`/`pull` over HTTPS use `gh`'s stored auth instead of
-    # failing with "could not read Username" -- ~/.config/git/config is
-    # home-manager-managed (read-only), so `gh auth setup-git` can't write
-    # to it directly; setting this here is the equivalent for this repo.
-    settings.credential.helper = "!gh auth git-credential";
-    # mini.sessions' local-session file (see nvim/plugin/30_mini.lua) lands
-    # directly in a project's cwd as `Session.vim` -- global ignore instead
-    # of expecting every repo (most not even mine) to carry its own entry.
-    ignores = [ "Session.vim" ];
-  };
-
-  programs.zsh = {
-    enable = true;
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
-    enableCompletion = true;
-    history.size = 10000;
-    shellAliases = {
-      ll = "ls -la";
-      la = "ls -A";
-      gs = "git status";
-      # $(hostname) rather than a hardcoded host name so these keep working
-      # unchanged if another host is ever added -- see DECISIONS.md.
-      nrs = "sudo nixos-rebuild switch --flake ~/dotfiles/nixos#$(hostname)";
-      nrb = "sudo nixos-rebuild build --flake ~/dotfiles/nixos#$(hostname)";
-    };
-  };
-
-  # Per-project dev environments (e.g. a C++ project's flake.nix pulling in
-  # Eigen/Boost/fmt/Catch2/ninja) rather than piling project-specific
-  # libraries into system.systemPackages -- see DECISIONS.md. nix-direnv
-  # adds a build-output cache on top of plain direnv, so `nix develop`'s
-  # shell doesn't get fully re-evaluated on every `cd`. enableZshIntegration
-  # defaults to true, hooking into programs.zsh above automatically.
-  programs.direnv = {
-    enable = true;
-    nix-direnv.enable = true;
-  };
-
-  # Prompt. Colors reference catppuccin/nix's generated palette (lavender/
-  # mauve/red/green — see DECISIONS.md), merged in via catppuccin.starship
-  # below. `directory` specifically tracks the global accent (lavender) --
-  # git_branch/git_status/character stay mauve/red/green regardless of
-  # accent, a separate deliberate multi-color choice, not accent-linked.
-  # enableZshIntegration defaults to true, so this hooks into programs.zsh
-  # above automatically.
-  programs.starship = {
-    enable = true;
-    settings = {
-      add_newline = true;
-      format = "$directory$git_branch$git_status$character";
-
-      directory = {
-        style = "bold lavender";
-        truncation_length = 3;
-        truncate_to_repo = true;
-      };
-
-      git_branch = {
-        style = "mauve";
-        format = "[ $symbol$branch]($style)";
-        symbol = " ";
-      };
-
-      git_status = {
-        style = "red";
-        format = "[$all_status$ahead_behind]($style)";
-      };
-
-      character = {
-        success_symbol = "[❯](bold green)";
-        error_symbol = "[❯](bold red)";
-      };
-    };
-  };
-
+  # Everything below is this laptop's Wayland desktop (niri) and GUI
+  # software -- user-facing, but not portable to an arbitrary other machine
+  # the way core.nix's shell/editor/dev tooling is. `fuzzel` and `git` are
+  # deliberately not listed here even though an older flat package list had
+  # them -- `git` comes from core.nix's `programs.git`, `fuzzel` from
+  # `programs.fuzzel` below; listing either again would just be a redundant
+  # duplicate.
   home.packages = with pkgs; [
-    fzf # needed by tmux-sessionizer
-    ripgrep
-    tmux
     wob # services.wob below only wires the package in when systemd=true;
         # with systemd=false (see that block for why) it has to go here.
-    claude-code
-    jq # needed by scripts/window-switcher.sh to parse `niri msg -j windows`
-
-    # Everything below used to live in environment.systemPackages on the
-    # host -- moved here since it's all user-facing software, not
-    # system-level (drivers/daemons/boot), which is what home-manager is
-    # for. `fuzzel` and `git` are deliberately not listed even though the
-    # old system list had them -- they're already installed by their own
-    # `programs.<app>.enable` modules below, listing them again would just
-    # be a redundant duplicate.
-    gh
-    vim
-    neovim
-    wget
     ghostty
-
-    python3
-    python3Packages.pip
-    # hiPrio on gcc: home-manager's home.packages buildEnv (unlike
-    # environment.systemPackages, which tolerates this) fails outright on
-    # gcc and clang both providing bin/ld.bfd -- confirmed via a real build
-    # error ("two given paths contain a conflicting subpath"), not a
-    # hypothetical. This keeps both compilers fully available under their
-    # own gcc/clang/clang++ names, just lets gcc's copy of the generic
-    # ld.bfd win the conflict.
-    (pkgs.lib.hiPrio gcc)
-    clang
-    cmake
-    gnumake
-    gdb
-
-    nixd
-    lua-language-server
-    pyright
-    clang-tools
-    bash-language-server
-    tree-sitter
 
     swaybg
     wlsunset
@@ -225,6 +113,8 @@ in
     pavucontrol
     networkmanagerapplet
     polkitAgentWrapper
+    ghosttyTmuxAttach
+    niriFloatSticky
     wl-clipboard
     libnotify
     xwayland-satellite # niri's Xwayland bridge -- see niri/config.kdl's
@@ -246,15 +136,14 @@ in
     parsec-bin
 
     godot
+    # Godot/GDScript tooling used by Neovim's godotdev.nvim integration and
+    # available to Codex for verification from any Godot project directory.
+    # godotdev.nvim prefers the fast GDQuest formatter; gdtoolkit supplies
+    # gdlint plus gdformat as an alternative/CLI formatter.
+    gdscript-formatter
+    gdtoolkit_4
     blenderOffload
   ];
-
-  home.file.".local/bin/tmux-sessionizer" = {
-    source = ./dotfiles/bin/tmux-sessionizer;
-    executable = true;
-  };
-
-  home.file.".config/tmux/plugins/tpm".source = tpm;
 
   # Procedurally generated (see dotfiles/wallpaper/generate.sh) rather than
   # downloaded, so it stays on-palette and has no license to track. Solid
@@ -362,6 +251,31 @@ in
     enable = true;
     theme = spicePkgs.themes.catppuccin;
     colorScheme = "latte";
+
+    # catppuccin/spicetify's user.css only themes the left-hand transport
+    # controls in the now-playing bar (shuffle/play/skip/heart/progress) --
+    # confirmed by grepping the theme's built user.css, there isn't a
+    # single rule for the right-hand icons (volume, queue, connect-device,
+    # lyrics, fullscreen). Those fall back to Spotify's own default icon
+    # color, tuned for its native black UI, which reads as washed-out
+    # against Latte's light background -- reported as "hard to see" at the
+    # bottom of the window. Rather than guess Spotify's obfuscated,
+    # version-specific class names for each of those icons individually,
+    # this targets every icon in the bar broadly (data-testid selectors are
+    # far more stable across Spotify updates than class names) with the
+    # same colors the theme already uses for the covered buttons.
+    enabledSnippets = [
+      ''
+        :root .Root__now-playing-bar button svg,
+        :root .Root__now-playing-bar [role="slider"] svg {
+          fill: var(--spice-subtext) !important;
+        }
+        :root .Root__now-playing-bar button:hover svg,
+        :root .Root__now-playing-bar [role="slider"]:hover svg {
+          fill: var(--spice-text) !important;
+        }
+      ''
+    ];
   };
 
   # wob: on-screen volume/brightness popup. No catppuccin.nix module for it,
@@ -436,14 +350,11 @@ in
   # deprecation warning on every rebuild.
   home.pointerCursor.enable = true;
 
+  # `enable`/`flavor`/`accent`/`starship.enable` come from core.nix -- these
+  # are the desktop-only flavors of catppuccin theming, for GUI programs
+  # that only exist in this file.
   catppuccin = {
-    enable = true;
-    autoEnable = false;
-    flavor = "latte";
-    accent = "lavender";
-
     fuzzel.enable = true;
-    starship.enable = true;
     gtk.icon.enable = true;
     cursors.enable = true;
     # niri stays hand-applied — see DECISIONS.md for why.
@@ -470,12 +381,6 @@ in
   gtk.gtk4.theme = config.gtk.theme;
 
   xdg.configFile = {
-    "nvim".source = ./dotfiles/nvim;
-    # Per-file, not whole-directory, unlike the others below -- leaves
-    # ~/.config/tmux/plugins/ free for TPM's own imperative plugin clones
-    # to live alongside the Nix-managed tpm symlink (home.file above),
-    # same reasoning as the earlier fuzzel/swaylock restructuring.
-    "tmux/tmux.conf".source = ./dotfiles/tmux/tmux.conf;
     "ghostty".source = ./dotfiles/ghostty;
     "niri".source = ./dotfiles/niri;
     "scripts".source = ./dotfiles/scripts;
