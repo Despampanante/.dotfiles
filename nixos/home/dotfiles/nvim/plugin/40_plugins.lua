@@ -55,7 +55,9 @@ now_if_args(function()
     'lua',
     'vimdoc',
     'markdown',
-    'gdscript'
+    'gdscript',
+    'c', -- also covers '.h' headers, which default to filetype 'c'
+    'cpp',
     -- Add here more languages with which you want to use tree-sitter
     -- To see available languages:
     -- - Execute `:=require('nvim-treesitter').get_available()`
@@ -166,11 +168,74 @@ later(function()
   require('dapui').setup()
   local dap, dapui = require('dap'), require('dapui')
   dap.listeners.after.event_initialized['dapui_config'] = dapui.open
-  dap.listeners.before.event_terminated['dapui_config'] = dapui.close
-  dap.listeners.before.event_exited['dapui_config'] = dapui.close
+  -- Deliberately not auto-closing on 'terminated'/'exited': the debuggee's
+  -- stdout lands in dapui's console panel, and auto-closing on exit hid it
+  -- before it could be read (especially for fast-finishing programs). Close
+  -- manually with `<Leader>du` once you're done reading.
+  --
+  -- Something (not this config -- traced through dapui's and nvim-dap's full
+  -- source without finding the exact cause) closes every dapui window the
+  -- instant the debuggee process exits, regardless of the above. Empirically,
+  -- reopening shortly after reliably restores them and they stay open.
+  local reopen = function() vim.defer_fn(dapui.open, 100) end
+  dap.listeners.after.event_exited['dapui_reopen'] = reopen
+  dap.listeners.after.event_terminated['dapui_reopen'] = reopen
 
   -- Per-language debug adapter configuration goes here. See the "Godot
   -- development" section below for an example (configured by 'godotdev.nvim').
+
+  -- C/C++ via GDB's built-in DAP mode (GDB 14+, installed via Nix -- no
+  -- 'codelldb'/'cpptools' needed). `program` prompts for the binary to debug
+  -- since there's no single fixed build output across different repos.
+  --
+  -- Adapter is a function (not a static table) so it can open a real terminal
+  -- split and point GDB's `inferior-tty` at it before launching. GDB's DAP
+  -- mode relays the debuggee's stdout as 'output' events only lazily (only at
+  -- the *next* stop/exit, and only for already-newline-terminated text) and
+  -- dapui's Console element never receives it at all (that's wired only to
+  -- nvim-dap's `runInTerminal` flow, which GDB's DAP mode never requests).
+  -- Redirecting the inferior's actual tty sidesteps all of that: output shows
+  -- up in a plain terminal, same as running the program normally.
+  dap.adapters.gdb = function(on_config, config)
+    vim.cmd('botright vsplit | terminal')
+    local term_buf = vim.api.nvim_get_current_buf()
+    local pty = vim.api.nvim_get_chan_info(vim.b[term_buf].terminal_job_id).pty
+    vim.cmd('wincmd p')
+    on_config({
+      type = 'executable',
+      command = 'gdb',
+      args = { '-i', 'dap', '-ex', 'set inferior-tty ' .. pty },
+    })
+  end
+  dap.configurations.cpp = {
+    {
+      name = 'Run with gdb',
+      type = 'gdb',
+      request = 'launch',
+      program = function()
+        return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/build/', 'file')
+      end,
+      cwd = '${workspaceFolder}',
+      stopAtBeginningOfMainSubprogram = false,
+    },
+  }
+  dap.configurations.c = dap.configurations.cpp
+end)
+
+-- Git interface ==============================================================
+
+-- A Magit-inspired Git interface inside Neovim. Keep this alongside the
+-- existing lazygit terminal integration: Neogit is useful for keyboard-driven
+-- staging/committing and Git popups, while lazygit remains available for its
+-- broader visual overview. mini.pick is already installed and configured by
+-- 'plugin/30_mini.lua', so use it for Neogit's selection prompts rather than
+-- pulling in Telescope or fzf-lua solely for this plugin.
+later(function()
+  add({ 'https://github.com/NeogitOrg/neogit' })
+
+  require('neogit').setup({
+    integrations = { mini_pick = true },
+  })
 end)
 
 -- Snippets ===================================================================
@@ -204,8 +269,11 @@ later(function()
     -- 'gdscript' parser is already installed/started via the treesitter
     -- block above; don't let this plugin manage it too
     treesitter = { auto_setup = false },
-    -- No 'gdscript-formatter'/'gdformat' installed yet; avoid save-time warnings
-    formatter = false,
+    -- Installed declaratively via home/santi.nix. This enables automatic
+    -- formatting of .gd files after save using the plugin's preferred
+    -- `gdscript-formatter --reorder-code` command. `gdlint`/`gdformat` from
+    -- gdtoolkit_4 remain available to Neovim, Codex, and project checks.
+    formatter = 'gdscript-formatter',
   })
 
   -- ':GodotDocs' defaults to symbol under cursor. Kept off '<Leader>g' since

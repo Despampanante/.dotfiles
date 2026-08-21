@@ -32,6 +32,10 @@
       "rev": "1599a473aa6f5290a5d740b1144846e6f0c3963d",
       "src": "https://github.com/nvim-mini/mini.nvim"
     },
+    "neogit": {
+      "rev": "37e0f22a2345bad1bffe01b31970885882f46275",
+      "src": "https://github.com/NeogitOrg/neogit"
+    },
     "neovim": {
       "rev": "ff483051a47e27d84bdef47703538df1ed9f4a47",
       "src": "https://github.com/rose-pine/neovim"

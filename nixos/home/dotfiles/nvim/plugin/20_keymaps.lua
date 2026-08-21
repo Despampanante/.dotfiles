@@ -51,12 +51,14 @@ nmap(']p', '<Cmd>exe "iput "  . v:register<CR>', 'Paste Below')
 -- Add an entry if you create a new group.
 Config.leader_group_clues = {
   { mode = 'n', keys = '<Leader>b', desc = '+Buffer' },
+  { mode = 'n', keys = '<Leader>d', desc = '+Debug' },
   { mode = 'n', keys = '<Leader>e', desc = '+Explore/Edit' },
   { mode = 'n', keys = '<Leader>f', desc = '+Find' },
   { mode = 'n', keys = '<Leader>g', desc = '+Git' },
   { mode = 'n', keys = '<Leader>l', desc = '+Language' },
   { mode = 'n', keys = '<Leader>m', desc = '+Map' },
   { mode = 'n', keys = '<Leader>o', desc = '+Other' },
+  { mode = 'n', keys = '<Leader>r', desc = '+Run' },
   { mode = 'n', keys = '<Leader>s', desc = '+Session' },
   { mode = 'n', keys = '<Leader>t', desc = '+Terminal' },
   { mode = 'n', keys = '<Leader>v', desc = '+Visits' },
@@ -91,6 +93,23 @@ nmap_leader('bD', '<Cmd>lua MiniBufremove.delete(0, true)<CR>',  'Delete!')
 nmap_leader('bs', new_scratch_buffer,                            'Scratch')
 nmap_leader('bw', '<Cmd>lua MiniBufremove.wipeout()<CR>',        'Wipeout')
 nmap_leader('bW', '<Cmd>lua MiniBufremove.wipeout(0, true)<CR>', 'Wipeout!')
+
+-- d is for 'Debug'. Common usage:
+-- - `<Leader>db` - toggle breakpoint on current line
+-- - `<Leader>dc` - start debugging / continue to next breakpoint
+-- - `<Leader>do` / `<Leader>di` / `<Leader>dO` - step over / into / out
+-- - `<Leader>du` - toggle the 'nvim-dap-ui' panes (scopes, stacks, breakpoints)
+-- See 'plugin/40_plugins.lua' for adapter/configuration setup (e.g. C/C++ via gdb).
+nmap_leader('db', '<Cmd>lua require("dap").toggle_breakpoint()<CR>', 'Toggle breakpoint')
+nmap_leader('dB', '<Cmd>lua require("dap").set_breakpoint(vim.fn.input("Condition: "))<CR>', 'Conditional breakpoint')
+nmap_leader('dc', '<Cmd>lua require("dap").continue()<CR>',          'Continue/Start')
+nmap_leader('dh', '<Cmd>lua require("dapui").eval()<CR>',            'Hover eval')
+nmap_leader('di', '<Cmd>lua require("dap").step_into()<CR>',         'Step into')
+nmap_leader('do', '<Cmd>lua require("dap").step_over()<CR>',         'Step over')
+nmap_leader('dO', '<Cmd>lua require("dap").step_out()<CR>',          'Step out')
+nmap_leader('dr', '<Cmd>lua require("dap").repl.toggle()<CR>',       'Toggle REPL')
+nmap_leader('dt', '<Cmd>lua require("dap").terminate()<CR>',         'Terminate')
+nmap_leader('du', '<Cmd>lua require("dapui").toggle()<CR>',          'Toggle UI')
 
 -- e is for 'Explore' and 'Edit'. Common usage:
 -- - `<Leader>ed` - open explorer at current working directory
@@ -144,6 +163,7 @@ nmap_leader('fg', '<Cmd>Pick grep_live<CR>',                    'Grep live')
 nmap_leader('fG', '<Cmd>Pick grep pattern="<cword>"<CR>',       'Grep current word')
 nmap_leader('fh', '<Cmd>Pick help<CR>',                         'Help tags')
 nmap_leader('fH', '<Cmd>Pick hl_groups<CR>',                    'Highlight groups')
+nmap_leader('fk', '<Cmd>Pick keymaps<CR>',                      'Keymaps')
 nmap_leader('fl', '<Cmd>Pick buf_lines scope="all"<CR>',        'Lines (all)')
 nmap_leader('fL', '<Cmd>Pick buf_lines scope="current"<CR>',    'Lines (buf)')
 nmap_leader('fm', '<Cmd>Pick git_hunks<CR>',                    'Modified hunks (all)')
@@ -160,8 +180,62 @@ nmap_leader('fV', '<Cmd>Pick visit_paths<CR>',                  'Visit paths (cw
 -- - `<Leader>go` - toggle 'mini.diff' overlay to show in-buffer unstaged changes
 -- - `<Leader>gd` - show unstaged changes as a patch in separate tabpage
 -- - `<Leader>gL` - show Git log of current file
+-- - `<Leader>gg` - toggle 'lazygit' in a floating terminal
+-- - `<Leader>gn` - open the Magit-inspired Neogit status interface
 local git_log_cmd = [[Git log --pretty=format:\%h\ \%as\ │\ \%s --topo-order]]
 local git_log_buf_cmd = git_log_cmd .. ' --follow -- %'
+
+nmap_leader('gn', '<Cmd>Neogit<CR>', 'Neogit')
+
+-- Toggle a 'lazygit' floating terminal: close it if its window is showing,
+-- reopen (reusing the running job, not a second lazygit process) if it's
+-- hidden, else spawn it fresh. Unlike the DAP REPL terminal (see below),
+-- there's nothing worth looking at once lazygit itself has exited, so the
+-- buffer is wiped on 'TermClose' instead of leaving behind a dead
+-- "[Process exited 0]" buffer.
+--
+-- Deliberately self-contained (no dependency on this file's other local
+-- helpers or on options set elsewhere, e.g. 'vim.o.winborder' in
+-- '10_options.lua') so it can be copy-pasted into any Neovim config as-is --
+-- the only external requirement is the 'lazygit' binary on PATH.
+local lazygit_buf = nil
+local lazygit_float_opts = function()
+  local width = math.floor(vim.o.columns * 0.85)
+  local height = math.floor(vim.o.lines * 0.85)
+  return {
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    style = 'minimal',
+    border = 'single',
+  }
+end
+local toggle_lazygit = function()
+  if lazygit_buf and vim.api.nvim_buf_is_valid(lazygit_buf) then
+    local win = vim.fn.bufwinid(lazygit_buf)
+    if win ~= -1 then
+      vim.api.nvim_win_close(win, false)
+      return
+    end
+    vim.api.nvim_open_win(lazygit_buf, true, lazygit_float_opts())
+    vim.cmd('startinsert')
+    return
+  end
+
+  vim.api.nvim_open_win(vim.api.nvim_create_buf(false, true), true, lazygit_float_opts())
+  vim.cmd('terminal lazygit')
+  lazygit_buf = vim.api.nvim_get_current_buf()
+  vim.api.nvim_create_autocmd('TermClose', {
+    buffer = lazygit_buf,
+    once = true,
+    callback = function()
+      vim.cmd('bdelete!')
+      lazygit_buf = nil
+    end,
+  })
+end
 
 nmap_leader('ga', '<Cmd>Git diff --cached<CR>',             'Added diff')
 nmap_leader('gA', '<Cmd>Git diff --cached -- %<CR>',        'Added diff buffer')
@@ -169,6 +243,7 @@ nmap_leader('gc', '<Cmd>Git commit<CR>',                    'Commit')
 nmap_leader('gC', '<Cmd>Git commit --amend<CR>',            'Commit amend')
 nmap_leader('gd', '<Cmd>Git diff<CR>',                      'Diff')
 nmap_leader('gD', '<Cmd>Git diff -- %<CR>',                 'Diff buffer')
+nmap_leader('gg', toggle_lazygit,                            'Lazygit (toggle)')
 nmap_leader('gl', '<Cmd>' .. git_log_cmd .. '<CR>',         'Log')
 nmap_leader('gL', '<Cmd>' .. git_log_buf_cmd .. '<CR>',     'Log buffer')
 nmap_leader('go', '<Cmd>lua MiniDiff.toggle_overlay()<CR>', 'Toggle overlay')
@@ -211,6 +286,12 @@ nmap_leader('mt', '<Cmd>lua MiniMap.toggle()<CR>',       'Toggle')
 nmap_leader('or', '<Cmd>lua MiniMisc.resize_window()<CR>', 'Resize to default width')
 nmap_leader('ot', '<Cmd>lua MiniTrailspace.trim()<CR>',    'Trim trailspace')
 nmap_leader('oz', '<Cmd>lua MiniMisc.zoom()<CR>',          'Zoom toggle')
+
+-- r is for 'Run'. Common usage (C/C++ buffers only, see 'after/ftplugin/'):
+-- - `<Leader>rb` - build via `:make` (uses `makeprg` set for this project)
+-- - `<Leader>rr` - run the binary built from the current file
+nmap_leader('rb', '<Cmd>make<CR>', 'Build')
+nmap_leader('rr', '<Cmd>Run<CR>',  'Run current file')
 
 -- s is for 'Session'. Common usage:
 -- - `<Leader>sl` - opt this project directory into local-session autosave/
