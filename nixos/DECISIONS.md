@@ -1603,3 +1603,187 @@ workspace `w0`. Not touched pre-emptively since guessing wrong here
 would trade a possibly-nonexistent problem for a real one -- needs
 checking live, alongside the other end-to-end items already queued for
 next login.
+
+## Sway removed again
+
+Sway had already been added once and removed once before (see "Sway is
+gone too" above), then added back a second time as a DankMaterialShell-
+themed second login session (Catppuccin Latte, per-output workspace
+switching via `next_on_output`/`prev_on_output`, a ported fuzzy window
+switcher, etc.) -- and now removed again, this time by explicit user
+call ("I think I actually just want to stick with niri"), not because
+anything about the second attempt was broken. `programs.sway.enable`
+dropped from `hosts/legion-laptop/configuration.nix`, the
+`xdg.configFile."sway"` line and `home/dotfiles/sway/` dropped from
+`home/santi.nix`, and `home/dotfiles/scripts/window-switcher.sh`'s
+`$SWAYSOCK` branch removed (niri-only again). Full sway config from
+this second attempt is recoverable from git history if it ever comes up
+a third time.
+
+## Dropped forced spawn-at-startup for discord/spotify/google-chrome/obsidian
+
+Now that nirinit (added alongside tmux-resurrect/continuum and
+mini.sessions for niri/tmux/nvim session management) actually restores
+real session state, unconditionally force-spawning these four every
+login is redundant -- nirinit brings them back if they were open when
+the session was last saved, without forcing them open on logins where
+they weren't wanted. Removed the four `spawn-at-startup` lines from
+`home/dotfiles/niri/config.kdl`, and emptied
+`services.nirinit.settings.skip.apps` in
+`hosts/legion-laptop/configuration.nix` since it existed only to stop
+nirinit double-launching windows that spawn-at-startup already opened --
+with that gone, there's nothing left to skip.
+
+Tradeoff accepted: on a genuinely first-ever login, or if the saved
+session is stale/empty (nirinit writes an empty bootstrap session.json
+immediately on first run, before spawn-at-startup apps have mapped a
+window -- confirmed live, see the note in configuration.nix), nothing
+launches these four automatically. That's a one-time manual relaunch
+instead of a silent guarantee, judged an acceptable tradeoff for not
+force-opening apps that were deliberately closed.
+
+Also confirmed live during this change: `skip.apps` (while it was still
+populated) matched against the window's real Wayland `app_id`, not the
+package/binary name -- `discord`/`google-chrome` matched lowercase as
+guessed, but Spotify's real app_id is `Spotify` (capitalized) and
+Obsidian's is `md.Obsidian`, not `obsidian`. Both silently failed to
+match and nirinit attempted to relaunch them anyway on a forced restore
+test; no duplicate windows resulted only because both apps enforce their
+own single-instance locking, not because of anything nirinit itself
+guards against.
+
+## SDDM greeter cursor: four separate pieces needed, none of them optional
+
+Getting a themed cursor to actually show up on the SDDM greeter (as
+opposed to inside a logged-in session, which home-manager's
+`catppuccin.cursors`/`home.pointerCursor` already covers) turned into
+four independent fixes layered in `hosts/legion-laptop/configuration.nix`,
+because the greeter has no single settings path that reaches all of it:
+
+- `environment.variables.XCURSOR_THEME`/`XCURSOR_SIZE` -- necessary but
+  not sufficient on their own. Confirmed live: `systemctl show
+  sddm.service -p Environment` came back completely empty even with this
+  set, so nothing SDDM-side was actually reading it.
+- `services.displayManager.sddm.settings.Theme.CursorTheme`/`CursorSize`
+  -- the module only auto-sets these for the default "breeze" theme
+  (confirmed in the module source); since this config overrides to
+  catppuccin, they're silently never set without an explicit override.
+- `services.displayManager.sddm.settings.General.GreeterEnvironment` --
+  same gating problem, module-side: only auto-set when
+  `cfg.wayland.compositor == "kwin"`. This config overrides
+  `compositorCommand` directly (custom Weston wrapper, see below), so
+  that condition never fires either.
+- The actual visible, interactive cursor is drawn by SDDM's own Qt/QML
+  greeter process, a separate Wayland client sibling to Weston, not by
+  Weston itself -- Weston's `weston.ini` `[core] cursor-theme` only
+  covers Weston's own compositor-drawn fallback cursor. Needed a custom
+  `compositorCommand` wrapper script that exports `XCURSOR_PATH` (the
+  real Nix store path, since a theme *name* alone is unresolvable outside
+  libXcursor's standard search dirs) before `exec`ing Weston with a
+  generated `weston.ini`.
+
+All four are additive, not alternatives -- confirmed by reading the
+`nixos-sddm` module source directly for the gating logic, not by trial
+and error. Not fully build-verified end-to-end at the time (the greeter
+screen itself wasn't observed live) -- worth a visual check next login.
+
+## Fixed "DMS never started" on niri -- startup race, not a config bug
+
+User-reported live: DMS (DankMaterialShell) silently never came up after
+login. `journalctl --user -u dms.service` showed quickshell crashing
+instantly with `no wayland display available: dial unix .../wayland-1:
+connect: no such file or directory` -- Qt's platform-plugin abort on a
+missing Wayland socket is near-instant, not a slow failure.
+
+Root cause: `dms.service` starts as soon as `graphical-session.target` is
+reached, but that target only means niri *declared* the session ready,
+not that its Wayland socket has actually finished being created yet --
+a real race, confirmed by manually running `systemctl --user
+reset-failed dms.service && systemctl --user start dms.service` seconds
+later, which came up clean immediately. Because the crash is so fast,
+systemd's default restart-burst limit (5 restarts/10s) was exhausted in
+well under a second, landing the unit permanently in "start-limit-hit"
+rather than a normal brief retry delay.
+
+Two-layer fix in `home/santi.nix`, merged on top of the `[Unit]`/
+`[Service]` DMS's own home-manager module generates (home-manager merges
+attrsets across separate `systemd.user.services.dms` definitions, so no
+override/`mkForce` needed): an `ExecStartPre` script that polls for the
+real Wayland socket to exist (up to 5s, falls through to a normal
+`exec` attempt regardless so it can't introduce a new hard-failure mode),
+plus `StartLimitIntervalSec`/`StartLimitBurst` widened from the default
+as backup insurance. Verified the merged unit content post-build by
+reading the built store paths directly, not just assuming the Nix merge
+worked.
+
+## Corrected: two of three monitors are actually wired to the NVIDIA dGPU
+
+A comment in `hosts/legion-laptop/configuration.nix` had assumed this is
+a fully muxless laptop where the NVIDIA dGPU has no display wired to it
+at all, rendering only via PRIME offload copy-back to the AMD iGPU. That
+assumption was wrong, discovered while investigating why `niri` itself
+showed real (not idle) GPU utilization on the dGPU: sysfs connector
+status (`/sys/class/drm/card1-*/status`) plus `niri msg -j outputs`
+confirmed DP-2 (Samsung LS27A600U) and HDMI-A-1 (GIGABYTE M27Q, the
+144Hz monitor) are both wired directly to and scanned out by the NVIDIA
+GPU's own KMS driver. Only eDP-2 (the internal laptop panel) is actually
+on AMD. Common gaming-laptop design -- external ports hard-wired to the
+dGPU for full performance, only the internal panel routes through the
+iGPU for battery life.
+
+Practical fallout:
+- The dGPU can never fully idle-suspend while niri is running with those
+  monitors connected, regardless of Steam/games -- it's natively driving
+  two active outputs, not sitting idle waiting for offload work. niri PR
+  niri-wm/niri#4346 ("dynamically suspend idle secondary GPUs") won't
+  help here even once merged; its trigger condition is "no active
+  outputs," which will never be true on this machine.
+- Diagnosed a real Tabletop Simulator slowness complaint back to this:
+  TTS renders on the AMD iGPU (confirmed, not in `nvidia-smi`'s process
+  list; AMD `gpu_busy_percent` read 99%) but its window lives on
+  HDMI-A-1, which is NVIDIA-driven -- every frame paid a real cross-GPU
+  copy on top of an already-saturated iGPU. Fixed by the Steam
+  `extraEnv` PRIME-offload override above, which puts render and display
+  on the same GPU for anything shown on DP-2/HDMI-A-1.
+
+## nirinit restore silently failed for Spotify/Obsidian/Ghostty -- needed explicit `launch` mappings
+
+User reported the terminal (and, it turned out, Spotify/Obsidian too)
+didn't come back after a niri restart. `journalctl --user -u
+nirinit.service` showed the real cause directly: `Warning: window for
+`Spotify`/`md.Obsidian`/`com.mitchellh.ghostty` did not appear within
+5s`. nirinit defaults to spawning the window's literal Wayland `app_id`
+as the launch command when there's no `settings.launch` entry for it --
+fine for discord/google-chrome, where the app_id happens to equal the
+real binary name, but `Spotify`, `md.Obsidian`, and
+`com.mitchellh.ghostty` aren't real executables (confirmed real names via
+`command -v`: `spotify`, `obsidian`, `ghostty`). Added explicit
+`services.nirinit.settings.launch` app_id -> binary mappings for all
+three; discord/google-chrome still need no entry.
+
+## Removed the unused waybar/wlogout/swaync/swayidle/swaylock revert path
+
+Asked for a pass over the whole config to cut anything that doesn't need
+to be there, for readability. Found a real chunk of dead-but-configured
+weight: `home/waybar.nix` (183 lines), `home/wlogout.nix` (100 lines),
+`programs.swaylock`, `catppuccin.swaylock.enable`, the
+`swaynotificationcenter`/`swayidle` packages, and
+`xdg.configFile."swaync"` were all fully superseded by DankMaterialShell
+and confirmed to never actually spawn anywhere (no keybind, no
+spawn-at-startup references any of them -- the corresponding
+spawn-at-startup lines in `config.kdl` were commented out, not deleted).
+Kept deliberately across multiple past cleanup passes as a fast-revert
+safety net ("uncomment a few lines to go back"), but DMS has been stable
+for a while now -- asked, and the call was to actually remove it rather
+than keep carrying it.
+
+Deleted `home/waybar.nix`, `home/wlogout.nix`, and
+`home/dotfiles/swaync/`; dropped their `imports` line, the
+`programs.swaylock`/`catppuccin.swaylock.enable` block, the two unused
+packages, and the `swaync` xdg.configFile entry from `home/santi.nix`;
+removed the corresponding commented-out `spawn-at-startup`/keybind lines
+and their explanatory comments from `config.kdl`. Revert path is now "pull
+it back from git history" instead of "uncomment a few lines" -- still
+fully recoverable, just not sitting in the live config as dead weight.
+`swaybg` (still used for the wallpaper) and `fuzzel` (still used by
+`window-switcher.sh`) were not touched -- both have live consumers.

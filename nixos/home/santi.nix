@@ -37,6 +37,18 @@ let
     sha256 = "1c4s1maismj0l297vhnxkc309mcn4936q7z4j7jhaqc9vij984m1";
   };
 
+  # Catppuccin's official DankMaterialShell theme -- bundles all four
+  # flavors (Latte/Frappé/Macchiato/Mocha) in one catppuccin.json, picked
+  # inside DMS itself (see xdg.configFile below for where it's placed).
+  # Fetched declaratively rather than the upstream "download the file by
+  # hand" instructions, same reasoning as tpm above.
+  catppuccinDMSTheme = pkgs.fetchFromGitHub {
+    owner = "catppuccin";
+    repo = "dankmaterialshell";
+    rev = "c99287f89c51dcb5623772d07512f4d49f696994";
+    hash = "sha256-LCMpazzd1BG4CyucduvDBGtP/Rhi5PKsg755PPEusz0=";
+  };
+
   # Blender wrapped through `nvidia-offload` (the command legion-laptop's
   # `hardware.nvidia.prime.offload.enableOffloadCmd` puts on PATH -- see
   # configuration.nix): this hybrid-graphics laptop otherwise runs GUI apps
@@ -89,6 +101,10 @@ in
     # home-manager-managed (read-only), so `gh auth setup-git` can't write
     # to it directly; setting this here is the equivalent for this repo.
     settings.credential.helper = "!gh auth git-credential";
+    # mini.sessions' local-session file (see nvim/plugin/30_mini.lua) lands
+    # directly in a project's cwd as `Session.vim` -- global ignore instead
+    # of expecting every repo (most not even mine) to carry its own entry.
+    ignores = [ "Session.vim" ];
   };
 
   programs.zsh = {
@@ -168,10 +184,10 @@ in
     # Everything below used to live in environment.systemPackages on the
     # host -- moved here since it's all user-facing software, not
     # system-level (drivers/daemons/boot), which is what home-manager is
-    # for. `fuzzel`, `swaylock`, `waybar`, and `git` are deliberately not
-    # listed even though the old system list had them -- they're already
-    # installed by their own `programs.<app>.enable` modules below/in
-    # waybar.nix, listing them again would just be a redundant duplicate.
+    # for. `fuzzel` and `git` are deliberately not listed even though the
+    # old system list had them -- they're already installed by their own
+    # `programs.<app>.enable` modules below, listing them again would just
+    # be a redundant duplicate.
     gh
     vim
     neovim
@@ -200,8 +216,6 @@ in
     bash-language-server
     tree-sitter
 
-    swaynotificationcenter
-    swayidle
     swaybg
     wlsunset
     grim
@@ -249,11 +263,9 @@ in
   home.file.".local/share/wallpaper/catppuccin-latte.png".source =
     ./dotfiles/wallpaper/catppuccin-latte.png;
 
-  imports = [ ./waybar.nix ./wlogout.nix ];
-
-  # fuzzel and swaylock moved to the real home-manager modules (from plain
-  # xdg.configFile) so catppuccin.fuzzel/catppuccin.swaylock can merge their
-  # generated colors in via `programs.<app>.settings` — see DECISIONS.md.
+  # fuzzel moved to the real home-manager module (from plain xdg.configFile)
+  # so catppuccin.fuzzel can merge its generated colors in via
+  # `programs.fuzzel.settings` — see DECISIONS.md.
   programs.fuzzel = {
     enable = true;
     settings = {
@@ -282,15 +294,56 @@ in
     };
   };
 
-  programs.swaylock = {
+  # Desktop shell replacing waybar/fuzzel/swaylock/swayidle -- see
+  # niri/config.kdl for the `dms ipc call ...` binds that drive it
+  # (spotlight, lock, control-center, notifications) and DECISIONS.md for
+  # why. `niri.enableKeybinds`/`enableSpawn` deliberately left off: DMS's
+  # own KDL-codegen has an open upstream bug on the flake+niri path that
+  # leaves binds.kdl empty (AvengeMedia/DankMaterialShell#1586).
+  # `systemd.enable` starts it as a user service instead.
+  #
+  # Idle timeout / auto-lock isn't a Nix option here -- one-time manual
+  # pass through DMS's own settings panel after first login.
+  #
+  # `settings` is deliberately left unset: DMS's module writes it as a
+  # full overwrite of ~/.config/DankMaterialShell/settings.json, not a
+  # merge, and that file is live app state DMS keeps rewriting at runtime
+  # (window layout, recents, etc) -- declaring even one key would reset
+  # all of it back to just-what's-in-Nix on every rebuild. Stays fully
+  # GUI-driven; Nix only controls install + running.
+  #
+  # The Catppuccin theme file (catppuccinDMSTheme above) is pinned but not
+  # auto-activated, for the same reason. One-time manual step after
+  # rebuild: DMS Settings -> Personalization -> Light Mode (Latte only
+  # renders in light mode) -> Theme & Colors -> Custom -> pick the file
+  # below -> flavor "Latte", accent "Lavender".
+  programs.dank-material-shell = {
     enable = true;
-    settings = {
-      indicator-caps-lock = true;
-      font = "Iosevka Nerd Font";
-      font-size = 20;
-      indicator-radius = 115;
-    };
+    systemd.enable = true;
   };
+
+  # Startup race fix for "DMS never started" on niri -- quickshell was
+  # crashing before niri's Wayland socket existed yet, exhausting
+  # systemd's restart-burst limit before ever getting a real retry. Full
+  # story in DECISIONS.md. Both keys merge on top of the [Unit]/[Service]
+  # DMS's own home-manager module generates -- no override needed since
+  # neither is already set there.
+  systemd.user.services.dms = {
+    Unit = {
+      StartLimitIntervalSec = 30;
+      StartLimitBurst = 30;
+    };
+    Service.ExecStartPre = "${pkgs.writeShellScript "dms-wait-for-wayland" ''
+      for _ in $(seq 1 50); do
+        [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] && break
+        sleep 0.1
+      done
+      exit 0
+    ''}";
+  };
+
+  xdg.configFile."DankMaterialShell/themes/catppuccin.json".source =
+    "${catppuccinDMSTheme}/catppuccin.json";
 
   # Spotify, themed via spicetify-nix (flake input) + catppuccin/spicetify
   # (the official Catppuccin org theme, not a third-party file like the
@@ -312,8 +365,8 @@ in
   };
 
   # wob: on-screen volume/brightness popup. No catppuccin.nix module for it,
-  # so colors are hand-applied Catppuccin Latte hex (matches swaync/niri —
-  # see DECISIONS.md). `systemd = false` because this desktop never set up
+  # so colors are hand-applied Catppuccin Latte hex (matches niri's border
+  # colors — see DECISIONS.md). `systemd = false` because this desktop never set up
   # systemd session integration for niri (everything else is spawned
   # directly by the compositor, not systemd-activated) -- wob is started the
   # same way, piping into a hand-made FIFO instead of wob's socket unit.
@@ -339,44 +392,17 @@ in
     };
   };
 
-  # System-level noise suppression via PipeWire (RNNoise), not Discord's
-  # own Krisp -- Krisp is broken on NixOS specifically: nixpkgs patches
-  # the Discord binary (RPATH/interpreter rewriting, standard for every
-  # Electron app here since there's no FHS /usr/lib), and Krisp does a
-  # DRM-style integrity check against that binary which fails once it's
-  # patched, so it silently declines to load (see DECISIONS.md; tracked
-  # upstream, unresolved: https://github.com/NixOS/nixpkgs/issues/195512).
-  # Filtering the mic at the PipeWire level sidesteps Discord/Krisp
-  # entirely and benefits every app (calls in the browser, OBS, etc.),
-  # not just Discord. `programs.dconf.enable` (configuration.nix) is a
-  # required system-level companion -- the daemon needs it to persist
-  # state, called out explicitly in the module's own docs.
+  # System-level mic noise suppression via PipeWire (RNNoise +
+  # DeepFilterNet), not Discord's own Krisp -- Krisp is broken on NixOS
+  # (the patched Discord binary fails Krisp's integrity check) and this
+  # benefits every app, not just Discord. See DECISIONS.md for the
+  # Krisp/DeepFilterNet history. `programs.dconf.enable` (configuration.nix)
+  # is a required system-level companion for state persistence.
   #
-  # Still needs one manual, per-app step after rebuilding: in each app
-  # (Discord's Voice & Video settings, etc.), pick the EasyEffects-
-  # processed source as the input device -- PipeWire routing is runtime
-  # state, not something Nix can set once and have it stick.
-  #
-  # `deepfilternet#0` alongside rnnoise was added live, through the app
-  # itself, not originally declared here -- RNNoise alone rendered as
-  # empty/broken in EasyEffects 8.2.8's GUI (a real QML bug in this
-  # version's PageStreamsEffects panel, confirmed via its own service
-  # logs -- "Created graphical object was not placed in the graphics
-  # scene"), and adding DeepFilterNet (a second, newer ML-based
-  # noise-suppression plugin EasyEffects also bundles) alongside it is
-  # what actually got the panel rendering and processing visibly
-  # working. Folded back into this preset (rather than left as
-  # untracked live state in ~/.config/easyeffects/db/) so a rebuild's
-  # `--load-preset` doesn't silently wipe it back out to rnnoise-only.
-  # `post-filter-beta = 0.02` is the one DeepFilterNet value that ended
-  # up non-default live (confirmed by reading the real
-  # ~/.config/easyeffects/db/deepfilternetrc, and cross-checking the
-  # camelCase live key `postFilterBeta` against the installed binary's
-  # own strings to confirm `post-filter-beta` is really the matching
-  # preset-JSON key, not assumed) -- its other parameters
-  # (attenuation-limit, the processing-threshold/buffer settings) are
-  # left unset here since they were never touched and still sit at
-  # schema defaults live.
+  # Still needs one manual, per-app step after rebuilding: pick the
+  # EasyEffects-processed source as the input device in each app (e.g.
+  # Discord's Voice & Video settings) -- PipeWire routing is runtime
+  # state, not something Nix can set once.
   services.easyeffects = {
     enable = true;
     preset = "mic-denoise";
@@ -417,12 +443,10 @@ in
     accent = "lavender";
 
     fuzzel.enable = true;
-    swaylock.enable = true;
     starship.enable = true;
     gtk.icon.enable = true;
     cursors.enable = true;
-    # waybar is enabled in ./waybar.nix, next to the rest of its config.
-    # niri/swaync stay hand-applied — see DECISIONS.md for why.
+    # niri stays hand-applied — see DECISIONS.md for why.
   };
 
   gtk.enable = true;
@@ -450,11 +474,10 @@ in
     # Per-file, not whole-directory, unlike the others below -- leaves
     # ~/.config/tmux/plugins/ free for TPM's own imperative plugin clones
     # to live alongside the Nix-managed tpm symlink (home.file above),
-    # same reasoning as the earlier waybar/fuzzel/swaylock restructuring.
+    # same reasoning as the earlier fuzzel/swaylock restructuring.
     "tmux/tmux.conf".source = ./dotfiles/tmux/tmux.conf;
     "ghostty".source = ./dotfiles/ghostty;
     "niri".source = ./dotfiles/niri;
-    "swaync".source = ./dotfiles/swaync;
     "scripts".source = ./dotfiles/scripts;
   };
 }

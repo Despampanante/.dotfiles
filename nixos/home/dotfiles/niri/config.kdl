@@ -100,14 +100,31 @@ window-rule {
     open-maximized true
 }
 
-// Rounded window corners, matching the pill-radius look already used in
-// waybar/wlogout elsewhere. geometry-corner-radius alone only rounds the
+// Rounded window corners, matching the pill-radius look used elsewhere in
+// the desktop theme. geometry-corner-radius alone only rounds the
 // border/focus-ring decoration, not the window's actual content -- needs
 // clip-to-geometry true alongside it to round (and clip client-side
 // shadows off) the window itself too.
 window-rule {
     geometry-corner-radius 10
     clip-to-geometry true
+}
+
+// Required by DankMaterialShell on niri (per its compositor-setup docs):
+// its panels (bar, control center, spotlight launcher, lock screen) are
+// layer-shell surfaces under the "quickshell" namespace, and without
+// this they don't get positioned/backdrop-layered correctly relative to
+// regular tiled windows.
+layer-rule {
+    match namespace="^quickshell$"
+    place-within-backdrop true
+}
+
+// Same DMS docs -- floats any stray quickshell toplevel instead of
+// letting the blanket open-maximized window-rule below tile it.
+window-rule {
+    match app-id="org.quickshell$"
+    open-floating true
 }
 
 // Niri has no built-in Xwayland support (unlike sway, which gets it for
@@ -121,8 +138,7 @@ spawn-at-startup "xwayland-satellite"
 // "solid bg" approach as the Windows wallpaper) if this ever needs
 // reverting: spawn-at-startup "swaybg" "-c" "#eff1f5"
 spawn-at-startup "swaybg" "-i" "/home/santi/.local/share/wallpaper/catppuccin-latte.png" "-m" "fill"
-spawn-at-startup "waybar" "-c" "/home/santi/.config/waybar/config-niri" "-s" "/home/santi/.config/waybar/style.css"
-spawn-at-startup "swaync"
+
 spawn-at-startup "nm-applet" "--indicator"
 // The real polkit-gnome-authentication-agent-1 binary lives under a
 // /nix/store/<hash>-.../libexec path that changes every build, so this
@@ -132,15 +148,16 @@ spawn-at-startup "nm-applet" "--indicator"
 // all, so this agent was silently never running before.
 spawn-at-startup "polkit-agent-wrapper"
 
-// Auto-launched at login instead of by hand -- no workspace pinning, so
-// these just land wherever's focused when they spawn (HDMI-A-1, via
-// focus-at-startup above). Not the terminal: a terminal auto-spawning
-// every login isn't wanted, unlike these four which are meant to just
-// always be running in the background.
-spawn-at-startup "discord"
-spawn-at-startup "spotify"
-spawn-at-startup "google-chrome"
-spawn-at-startup "obsidian"
+// discord/spotify/google-chrome/obsidian used to be force-spawned here
+// unconditionally every login. Now that nirinit (services.nirinit in
+// configuration.nix) actually restores real session state, that's
+// redundant -- nirinit brings them back if they were open when the
+// session was last saved, which is the common case, without forcing
+// them open on logins where they weren't wanted. Tradeoff accepted: on
+// a genuinely first-ever login (or if the saved session is stale/empty --
+// see the nirinit bootstrap-race note in configuration.nix), nothing
+// launches these automatically anymore; that's a one-time manual relaunch
+// instead of a silent guarantee. See DECISIONS.md.
 
 // Night light -- wlroots' own gamma-control protocol. Real lat/long for
 // Arlington, VA (not GPS-aware -- would need manual adjustment during
@@ -149,15 +166,13 @@ spawn-at-startup "obsidian"
 // DECISIONS.md.
 spawn-at-startup "wlsunset" "-l" "38.88" "-L" "-77.10" "-t" "3500" "-T" "6500"
 
-// Idle lock -- sway has had this via swayidle in config.d/keybindings all
-// along; niri never got the equivalent, so the session just stayed
-// unlocked indefinitely. Same timings, swapped sway's `swaymsg "output *
-// power off/on"` for niri's own `niri msg action power-off/on-monitors`.
-spawn-at-startup "swayidle" "-w" \
-    "timeout" "600" "swaylock -f -C /home/santi/.config/swaylock/config" \
-    "timeout" "900" "niri msg action power-off-monitors" \
-    "resume" "niri msg action power-on-monitors" \
-    "before-sleep" "swaylock -f -C /home/santi/.config/swaylock/config"
+// Idle lock -- handled by DankMaterialShell's own idle detection +
+// auto-lock (home/santi.nix's `programs.dank-material-shell`), which has
+// no equivalent timeout/power-off knobs here in config.kdl -- those get
+// set once, live, through DMS's own settings panel after first login.
+// Known risk accepted here: DMS's niri lockscreen has an open, unfixed
+// upstream bug where unlock can stall, worse on multi-monitor setups
+// like this one (AvengeMedia/DankMaterialShell#2138).
 
 // wob has no systemd session integration set up here (nothing else in this
 // config is systemd-activated either), so it's spawned directly, reading
@@ -166,11 +181,21 @@ spawn-sh-at-startup "mkfifo -m 600 \"$XDG_RUNTIME_DIR/wob.sock\" 2>/dev/null; ta
 
 binds {
     Mod+Return { spawn "ghostty"; }
-    Mod+Space { spawn "fuzzel"; }
+    // fuzzel -> DMS's spotlight launcher. Old bind kept alongside,
+    // commented, for an easy revert:
+    // Mod+Space { spawn "fuzzel"; }
+    Mod+Space { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
     Mod+Tab { spawn "/home/santi/.config/scripts/window-switcher.sh"; }
     Mod+Q { close-window; }
     Mod+Shift+E { quit; }
-    Mod+Escape { spawn "swaylock" "-f" "-C" "/home/santi/.config/swaylock/config"; }
+    // DMS's lock screen -- see the idle-lock comment further down for
+    // the known niri+multi-monitor unlock-stall bug this accepts.
+    Mod+Escape { spawn "dms" "ipc" "call" "lock" "lock"; }
+    // DMS's floating panels -- the actual point of this migration (see
+    // DECISIONS.md): control-center covers network/bluetooth/audio,
+    // notifications is the notification center.
+    Mod+C { spawn "dms" "ipc" "call" "control-center" "toggle"; }
+    Mod+N { spawn "dms" "ipc" "call" "notifications" "toggle"; }
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     Mod+H { focus-column-left; }

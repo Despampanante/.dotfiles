@@ -110,10 +110,23 @@ now(function() require('mini.notify').setup() end)
 
 -- Session management. A thin wrapper around `:h mksession` that consistently
 -- manages session files. Example usage:
--- - `<Leader>sn` - start new session
+-- - `<Leader>sl` - write a *local* session (a `Session.vim` file dropped
+--   right in the cwd, rather than a named file under the global sessions
+--   dir) -- a one-time opt-in per project. Once one exists, `autoread`
+--   below finds and restores it automatically every time Neovim is
+--   opened with no file args from that same directory (same identity
+--   `~/.local/bin/tmux-sessionizer` already keys sessions off of, so a
+--   sessionizer-launched project picks buffers back up with no extra
+--   step), and `autowrite` (on by default) saves it back on quit --
+--   both handled by the plugin itself, see `:h MiniSessions.config`.
+-- - `<Leader>sn` - start new *named* (global) session
 -- - `<Leader>sr` - read previously started session
 -- - `<Leader>sd` - delete previously started session
-now(function() require('mini.sessions').setup() end)
+--
+-- `Session.vim` files live directly in the project directory -- ignored
+-- globally via `programs.git.ignores` in home/santi.nix rather than
+-- needing a per-repo .gitignore entry.
+now(function() require('mini.sessions').setup({ autoread = true }) end)
 
 -- Start screen. This is what is shown when you open Neovim like `nvim`.
 -- Example usage:

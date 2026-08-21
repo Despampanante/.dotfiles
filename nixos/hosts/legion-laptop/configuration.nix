@@ -67,32 +67,28 @@
   };
 
   # SDDM's greeter has no cursor at all without this -- catppuccin.cursors
-  # in home/santi.nix only applies inside the logged-in user's session (via
-  # home-manager), which SDDM runs entirely outside of, same split as the
-  # GTK/SDDM theming above. XCURSOR_THEME here has to match the folder name
-  # home-manager's pointerCursor resolves to (confirmed by building
-  # catppuccin-cursors.latteLavender and checking share/icons/ directly, same
-  # as how the GTK theme name was confirmed rather than guessed).
-  #
-  # Turned out not to be enough on its own: `systemctl show sddm.service -p
-  # Environment` came back completely empty even with this set, and more
-  # fundamentally the actual visible mouse pointer is drawn by SDDM's
-  # Wayland greeter's own embedded Weston compositor (`[Wayland]
-  # CompositorCommand` in /etc/sddm.conf.d -- confirmed by reading the
-  # NixOS sddm module source), not by anything reading XCURSOR_THEME
-  # directly. The module only auto-sets `[Theme] CursorTheme` for the
-  # default "breeze" theme (we override to catppuccin), and even then
-  # never forwards it into the Weston config it generates -- Weston's own
-  # weston.ini needs its own `[core] cursor-theme`/`cursor-size`, which the
-  # module doesn't expose at all. Overriding `compositorCommand` (marked
-  # `internal` in the module, but a real settable mkOption) with our own
-  # weston.ini that adds that section -- mirrors the module's own
-  # weston.ini generation for libinput/keyboard so nothing else regresses.
+  # in home/santi.nix only reaches the logged-in session, not the greeter.
+  # Four separate pieces below are all needed together, none optional on
+  # their own -- see DECISIONS.md ("SDDM greeter cursor") for why each one
+  # exists and what happens without it.
   environment.variables = {
     XCURSOR_THEME = "catppuccin-latte-lavender-cursors";
     XCURSOR_SIZE = "32";
   };
 
+  services.displayManager.sddm.settings.General.GreeterEnvironment =
+    "XCURSOR_THEME=catppuccin-latte-lavender-cursors;XCURSOR_PATH=${pkgs.catppuccin-cursors.latteLavender}/share/icons";
+
+  services.displayManager.sddm.settings.Theme = {
+    CursorTheme = "catppuccin-latte-lavender-cursors";
+    CursorSize = 32;
+  };
+
+  # The greeter's actual visible cursor is drawn by SDDM's own Qt/QML
+  # process, a sibling of Weston rather than Weston's own compositor-drawn
+  # fallback -- this wrapper only covers the latter, via a generated
+  # weston.ini plus XCURSOR_PATH (a bare theme name isn't resolvable
+  # outside libXcursor's standard search dirs).
   services.displayManager.sddm.wayland.compositorCommand =
     let
       westonIni = (pkgs.formats.ini { }).generate "weston.ini" {
@@ -111,16 +107,62 @@
           keymap_options = config.services.xserver.xkb.options;
         };
       };
+      westonWrapper = pkgs.writeShellScript "sddm-weston-wrapper" ''
+        export XCURSOR_PATH="${pkgs.catppuccin-cursors.latteLavender}/share/icons"
+        exec ${lib.getExe pkgs.weston} --shell=kiosk -c ${westonIni}
+      '';
     in
-    "${lib.getExe pkgs.weston} --shell=kiosk -c ${westonIni}";
+    "${westonWrapper}";
 
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true;
     localNetworkGameTransfers.openFirewall = true;
+
+    # Runs every game (and the Steam client itself) on the NVIDIA dGPU via
+    # PRIME render offload, instead of the AMD iGPU games otherwise land on
+    # by default -- see hardware.nvidia below for why. `extraEnv` exports
+    # into the FHS env's shell profile, so every child process Steam
+    # launches inherits it, no per-game Launch Options needed. Values match
+    # the `nvidia-offload` wrapper (prime.offload.enableOffloadCmd below).
+    package = pkgs.steam.override {
+      extraEnv = {
+        __NV_PRIME_RENDER_OFFLOAD = "1";
+        __NV_PRIME_RENDER_OFFLOAD_PROVIDER = "NVIDIA-G0";
+        __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+        __VK_LAYER_NV_optimus = "NVIDIA_only";
+      };
+    };
   };
 
   programs.niri.enable = true;
+  # Sway was tried as a second session (back after being dropped in
+  # 6396fd9) and then torn back down -- decided to just stick with niri.
+  # See git history around home/dotfiles/sway for the removed config if
+  # this ever comes up again.
+
+  # Session save/restore for niri -- niri itself is deliberately stateless
+  # (no layout persistence). Relaunches each window's command and moves it
+  # back into place; not a real process restore (a "restored" terminal is
+  # empty, a "restored" browser doesn't get its tabs back) -- that's what
+  # the tmux-resurrect + mini.sessions changes alongside this one are for.
+  # `skip.apps` is empty (nothing currently spawn-at-startup's a window
+  # nirinit would double-launch) but kept declared for future use -- see
+  # DECISIONS.md for the full history and the skip.apps casing gotcha.
+  services.nirinit = {
+    enable = true;
+    settings.skip.apps = [ ];
+
+    # Real binary name, wherever it differs from the window's Wayland
+    # app_id -- nirinit defaults to spawning the app_id itself otherwise,
+    # which fails silently when they don't match (confirmed live via
+    # `journalctl -u nirinit.service`; see DECISIONS.md).
+    settings.launch = {
+      "Spotify" = "spotify";
+      "md.Obsidian" = "obsidian";
+      "com.mitchellh.ghostty" = "ghostty";
+    };
+  };
 
   xdg.portal = {
     enable = true;
@@ -139,22 +181,27 @@
   hardware.graphics.enable = true;
   hardware.graphics.enable32Bit = true; # 32-bit Steam games need this too
 
-  # Hybrid graphics: AMD Cezanne iGPU (amdgpu, drives the internal panel --
-  # this is a muxless laptop, the NVIDIA GPU has no display wired to it at
-  # all) + NVIDIA RTX 3060 Mobile dGPU. Was falling back to the open-source
-  # `nouveau`/NVK stack (confirmed working -- GSP firmware loads, Vulkan
-  # via NVK enumerates the card fine -- but nothing selected it for actual
-  # use, and NVK's OpenGL path is weak on this GPU generation). Switched to
-  # the proprietary driver in PRIME offload mode (not sync -- sync needs a
-  # mux to drive the display from the dGPU, which this laptop doesn't
-  # have) for real gaming performance -- see DECISIONS.md.
+  # Hybrid graphics: AMD Cezanne iGPU (amdgpu) + NVIDIA RTX 3060 Mobile
+  # dGPU (nvidia). Muxless, but NOT "iGPU drives everything, dGPU has no
+  # display wired to it" -- confirmed live (sysfs connector status + `niri
+  # msg -j outputs`) that DP-2 and HDMI-A-1 (the two external monitors)
+  # are wired directly to the NVIDIA GPU's own KMS output; only eDP-2 (the
+  # internal laptop panel) is actually on AMD. See DECISIONS.md. PRIME
+  # *offload* (not sync) is still the right call regardless -- sync would
+  # mean the dGPU renders the entire desktop full-time for every window,
+  # not just the two outputs it already natively drives.
+  #
+  # Was falling back to the open-source `nouveau`/NVK stack (confirmed
+  # working -- GSP firmware loads, Vulkan via NVK enumerates the card fine
+  # -- but nothing selected it for actual use, and NVK's OpenGL path is
+  # weak on this GPU generation) before switching to the proprietary
+  # driver for real gaming performance.
   #
   # `open = true` uses NVIDIA's open-source *kernel* module (not the same
-  # thing as nouveau -- this still pulls in NVIDIA's proprietary userspace
-  # OpenGL/Vulkan/CUDA libraries). Officially supports Turing and later;
-  # this GA106 (Ampere) is well within that range, and NVIDIA has said the
-  # open modules are the recommended default for this generation going
-  # forward, not just a legacy-compat option.
+  # thing as nouveau -- still pulls in NVIDIA's proprietary userspace
+  # OpenGL/Vulkan/CUDA libraries). Officially supports Turing+; this GA106
+  # (Ampere) qualifies, and NVIDIA recommends the open modules as default
+  # for this generation now, not just a legacy-compat option.
   #
   # Bus IDs come straight from `lspci` (01:00.0 NVIDIA, 06:00.0 AMD),
   # decimal-converted per NixOS's PCI:bus:slot:function format.

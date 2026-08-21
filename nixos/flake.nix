@@ -20,9 +20,31 @@
       url = "github:Gerg-L/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Desktop shell (bar, control center, launcher, lock screen) replacing
+    # waybar/fuzzel/swaylock/swayidle -- see home/santi.nix's
+    # `programs.dank-material-shell` block and niri/config.kdl for the
+    # rest of the wiring. Pinned to the "stable" branch (its own release
+    # channel, not a git tag) rather than master, on the project's own
+    # recommendation.
+    dms = {
+      url = "github:AvengeMedia/DankMaterialShell/stable";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Session save/restore for niri (see hosts/legion-laptop/configuration.nix's
+    # `services.nirinit` for the actual config, DECISIONS.md for why) --
+    # relaunches windows back into their tracked workspace/output/size on
+    # login, periodically re-saves in the background. Ships its own
+    # `nixosModules.nirinit` (NixOS-level, not home-manager -- it wires up
+    # `systemd.user.services.nirinit` directly).
+    nirinit = {
+      url = "github:amaanq/nirinit";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, catppuccin, spicetify-nix, ... }@inputs: {
+  outputs = { self, nixpkgs, home-manager, catppuccin, spicetify-nix, dms, nirinit, ... }@inputs: {
     nixosConfigurations = {
       # The real laptop (Lenovo Legion 5 17ACH6H). See
       # hosts/legion-laptop/configuration.nix for why this is
@@ -34,6 +56,7 @@
         modules = [
           ./hosts/legion-laptop/configuration.nix
           catppuccin.nixosModules.catppuccin
+          nirinit.nixosModules.nirinit
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
@@ -42,6 +65,7 @@
             home-manager.sharedModules = [
               catppuccin.homeModules.catppuccin
               spicetify-nix.homeManagerModules.spicetify
+              dms.homeModules.dank-material-shell
             ];
             # santi.nix needs `inputs.spicetify-nix.legacyPackages` to reach
             # spicetify-nix's theme set -- specialArgs above only reaches

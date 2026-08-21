@@ -213,16 +213,19 @@ nmap_leader('ot', '<Cmd>lua MiniTrailspace.trim()<CR>',    'Trim trailspace')
 nmap_leader('oz', '<Cmd>lua MiniMisc.zoom()<CR>',          'Zoom toggle')
 
 -- s is for 'Session'. Common usage:
--- - `<Leader>sn` - start new session
+-- - `<Leader>sl` - opt this project directory into local-session autosave/
+--   autoload (see 'plugin/30_mini.lua')
+-- - `<Leader>sn` - start new named (global) session
 -- - `<Leader>sr` - read previously started session
 -- - `<Leader>sR` - restart Neovim preserving current session
 local session_new = 'vim.ui.input({ prompt = "Session name: " }, MiniSessions.write)'
 
-nmap_leader('sd', '<Cmd>lua MiniSessions.select("delete")<CR>', 'Delete')
-nmap_leader('sn', '<Cmd>lua ' .. session_new .. '<CR>',         'New')
-nmap_leader('sr', '<Cmd>lua MiniSessions.select("read")<CR>',   'Read')
-nmap_leader('sR', '<Cmd>lua MiniSessions.restart()<CR>',        'Restart')
-nmap_leader('sw', '<Cmd>lua MiniSessions.write()<CR>',          'Write current')
+nmap_leader('sd', '<Cmd>lua MiniSessions.select("delete")<CR>',              'Delete')
+nmap_leader('sl', '<Cmd>lua MiniSessions.write(MiniSessions.config.file)<CR>', 'Write local (cwd)')
+nmap_leader('sn', '<Cmd>lua ' .. session_new .. '<CR>',                       'New')
+nmap_leader('sr', '<Cmd>lua MiniSessions.select("read")<CR>',                'Read')
+nmap_leader('sR', '<Cmd>lua MiniSessions.restart()<CR>',                     'Restart')
+nmap_leader('sw', '<Cmd>lua MiniSessions.write()<CR>',                       'Write current')
 
 -- t is for 'Terminal'
 nmap_leader('tT', '<Cmd>horizontal term<CR>', 'Terminal (horizontal)')

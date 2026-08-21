@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Regenerates catppuccin-latte.png -- a plain Catppuccin Latte base/mantle
-# gradient with two soft glows in the same peach/mauve accents used
-# everywhere else (waybar border, GTK theme, starship). Procedural rather
+# gradient with two soft glows in the same accent colors used everywhere
+# else (niri border, GTK theme, starship). Procedural rather
 # than a downloaded image: no licensing to track, stays on-palette, and
 # regenerates identically on any machine. Not wired into the Nix build --
 # run by hand (needs imagemagick) whenever the source colors or target
