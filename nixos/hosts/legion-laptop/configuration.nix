@@ -1,7 +1,7 @@
 # Host: legion-laptop (Lenovo Legion 5 17ACH6H, dual-booting Windows). See
 # ../../DECISIONS.md for the reasoning behind the choices below.
 
-{ config, lib, pkgs, ... }:
+{ config, pkgs, ... }:
 
 {
   imports = [
@@ -55,8 +55,13 @@
     variant = "";
   };
 
+  # Keep the greeter on X11 for reliability (especially cursor rendering),
+  # while Wayland sessions such as niri remain available from the session
+  # picker. Plasma provides a conventional desktop for compatibility tests.
+  services.xserver.enable = true;
   services.displayManager.sddm.enable = true;
-  services.displayManager.sddm.wayland.enable = true;
+  services.displayManager.sddm.wayland.enable = false;
+  services.desktopManager.plasma6.enable = true;
 
   catppuccin = {
     enable = true;
@@ -83,36 +88,6 @@
     CursorTheme = "catppuccin-latte-lavender-cursors";
     CursorSize = 32;
   };
-
-  # The greeter's actual visible cursor is drawn by SDDM's own Qt/QML
-  # process, a sibling of Weston rather than Weston's own compositor-drawn
-  # fallback -- this wrapper only covers the latter, via a generated
-  # weston.ini plus XCURSOR_PATH (a bare theme name isn't resolvable
-  # outside libXcursor's standard search dirs).
-  services.displayManager.sddm.wayland.compositorCommand =
-    let
-      westonIni = (pkgs.formats.ini { }).generate "weston.ini" {
-        core = {
-          cursor-theme = "catppuccin-latte-lavender-cursors";
-          cursor-size = 32;
-        };
-        libinput = {
-          enable-tap = config.services.libinput.mouse.tapping;
-          left-handed = config.services.libinput.mouse.leftHanded;
-        };
-        keyboard = {
-          keymap_model = config.services.xserver.xkb.model;
-          keymap_layout = config.services.xserver.xkb.layout;
-          keymap_variant = config.services.xserver.xkb.variant;
-          keymap_options = config.services.xserver.xkb.options;
-        };
-      };
-      westonWrapper = pkgs.writeShellScript "sddm-weston-wrapper" ''
-        export XCURSOR_PATH="${pkgs.catppuccin-cursors.latteLavender}/share/icons"
-        exec ${lib.getExe pkgs.weston} --shell=kiosk -c ${westonIni}
-      '';
-    in
-    "${westonWrapper}";
 
   programs.steam = {
     enable = true;

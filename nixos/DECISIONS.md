@@ -1654,6 +1654,11 @@ guards against.
 
 ## SDDM greeter cursor: four separate pieces needed, none of them optional
 
+This Wayland/Weston-specific workaround has since been superseded on the
+legion laptop by running the SDDM greeter on X11. The custom Weston wrapper
+was removed from the active host configuration; niri remains available as a
+Wayland session, while Plasma 6 provides a conventional X11 test session.
+
 Getting a themed cursor to actually show up on the SDDM greeter (as
 opposed to inside a logged-in session, which home-manager's
 `catppuccin.cursors`/`home.pointerCursor` already covers) turned into
