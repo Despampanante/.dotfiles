@@ -1,7 +1,7 @@
 # Host: legion-laptop (Lenovo Legion 5 17ACH6H, dual-booting Windows). See
 # ../../DECISIONS.md for the reasoning behind the choices below.
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   imports = [
@@ -62,6 +62,9 @@
   services.displayManager.sddm.enable = true;
   services.displayManager.sddm.wayland.enable = false;
   services.desktopManager.plasma6.enable = true;
+  # Both Plasma and niri provide a default-session definition. Keep the
+  # existing niri login default while retaining Plasma in SDDM's picker.
+  services.displayManager.defaultSession = lib.mkForce "niri";
 
   catppuccin = {
     enable = true;
